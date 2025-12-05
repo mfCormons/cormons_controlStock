@@ -17,9 +17,9 @@ def comando_verificarToken(token, request):
     
     # Preparar mensaje
     mensaje = {
-        "Vista": "CONTROLSTOCK",
         "Comando": "verificarToken",
         "Token": token,
+        "Vista": "CONTROLSTOCK",
         "Version": APP_VERSION
     }
     
@@ -98,8 +98,8 @@ def comando_stockControlado(token, request):
     "token": "123abc",
     "Vista": "CONTROLSTOCK",
     “UsrActivo”:”A”,
-        "idSolicitud": “prod1”,
-    "cantidad": 5,
+    "idSolicitud": idSolicitud,
+    "cantidad": cantidad,
     }"
 
     """
