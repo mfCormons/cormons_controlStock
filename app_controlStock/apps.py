@@ -3,4 +3,4 @@ from django.apps import AppConfig
 
 class ControlstockConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'controlStock'
+    name = 'app_controlStock'

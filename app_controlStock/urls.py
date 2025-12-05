@@ -5,6 +5,6 @@ app_name = 'app_controlStock'
 
 urlpatterns = [
     path('', views.controlStock_view, name='controlStock'),
+    path('pendientes/', views.controlPendientes_view, name='controlPendientes'),
     path('logout/', views.logout_view, name='logout'),
-    # path('', views.index, name='index'),
 ]

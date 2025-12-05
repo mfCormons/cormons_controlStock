@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 import logging
+from django.http import JsonResponse
 from .utils import obtener_datos_cookies, renderizar_error, renderizar_exito
 from .services import comando_verificarToken, comando_controlPendientes, comando_stockControlado
 
@@ -21,8 +22,8 @@ def controlStock_view(request):
     # PASO 1: Obtener y validar cookies
     token, datos_conexion = obtener_datos_cookies(request)
     #DESCOMENTAR DESPUES DE HARDCODEAR COOKIES
-    # if not token or not datos_conexion:
-    #     return redirect('http://login.cormonsapp.com/login/')
+    if not token or not datos_conexion:
+        return redirect('http://login.cormonsapp.com/login/')
     
     empresa_nombre = datos_conexion.get('nombre', 'Empresa')
     
@@ -47,8 +48,33 @@ def controlStock_view(request):
     pendientes = respuesta_pendientes.get('pendientes', [])
     
     # PASO 4: Renderizar éxito
-    return render(request, 'controlStock/controlStock.html', {'pendientes': pendientes})
+    # Template real: app_controlStock/templates/app_controlStock/controlStock.html
+    return render(request, 'app_controlStock/controlStock.html', {'pendientes': pendientes})
     
+def controlPendientes_view(request):
+    """
+    Endpoint JSON que verifica token y devuelve la lista de pendientes.
+    Método: GET
+    Cookies requeridas: 'authToken' y 'connection_config' (gestionadas por obtener_datos_cookies)
+    """
+    # Obtener token y datos de conexión desde cookies
+    token, datos_conexion = obtener_datos_cookies(request)
+    if not token:
+        return JsonResponse({"error": "Faltan cookies de autenticación"}, status=401)
+
+    # Verificar token (usa comando_verificarToken)
+    respuesta_token = comando_verificarToken(token, request)
+    if not respuesta_token:
+        return JsonResponse({"error": "Token inválido o expirado"}, status=401)
+
+    # Obtener pendientes
+    respuesta_pendientes = comando_controlPendientes(token, request)
+    if not respuesta_pendientes:
+        return JsonResponse({"error": "Error al obtener pendientes"}, status=500)
+
+    pendientes = respuesta_pendientes.get("pendientes", [])
+    return JsonResponse({"pendientes": pendientes}, status=200)
+
 def logout_view(request):
     """
     Cierra sesión y redirige al login
