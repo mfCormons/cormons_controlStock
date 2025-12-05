@@ -44,7 +44,7 @@
         });
     }
 
-    const btnActualizar = document.getElementById('btnActualizar');
+    const btnActualizar = document.getElementById('btn-actualizar');
     if (btnActualizar) {
         btnActualizar.addEventListener('click', function() {
             console.log('🔁 Botón actualizar presionado');
