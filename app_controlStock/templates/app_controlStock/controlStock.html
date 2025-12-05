@@ -188,8 +188,8 @@
         </div>
     </template>
 
-    <!-- Cargar el script principal (ruta corregida al static de la app) -->
-    <script src="{% static 'app_controlStock/js/controlStock.js' %}"></script>
+    <!-- Cargar el script principal -->
+    <script src="{% static 'js/controlStock.js' %}"></script>
     <script>
         console.log('🔍 DEBUG INICIAL:');
         console.log('Token:', localStorage.getItem('authToken') ? 'Existe ✅' : 'NO existe ❌');
