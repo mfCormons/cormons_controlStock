@@ -54,8 +54,17 @@ def controlStock_view(request):
     pendientes = respuesta_pendientes.get('pendientes', [])
     
     # PASO 4: Renderizar éxito
-    # Template real: app_controlStock/templates/app_controlStock/controlStock.html
-    return render(request, 'app_controlStock/controlStock.html', {'pendientes': pendientes})
+    # al final de controlStock_view, en lugar de lo actual:
+    context = {
+        'pendientes': pendientes,
+        'empresa_nombre': empresa_nombre,
+        'usuario': usuario,
+        'nombre': nombre,
+        # opcional: pasar datos adicionales devueltos por controlPendientes
+        'deposito': respuesta_pendientes.get('deposito', ''),
+        'cod_deposito': respuesta_pendientes.get('cod_deposito', ''),
+    }
+    return render(request, 'app_controlStock/controlStock.html', context)
     
 def controlPendientes_view(request):
     """
