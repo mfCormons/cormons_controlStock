@@ -7,6 +7,7 @@ import socket
 import json
 from .__init__ import APP_VERSION, TCP_TIMEOUT, TCP_ENABLED
 from .utils import get_connection_config
+from .algoritmoEncriptacionCasero import encriptar, desencriptar
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +71,7 @@ def enviar_consulta_tcp(mensaje_dict, request=None, ip_custom=None, puerto_custo
     try:
         # Convertir a JSON string
         contenido_json = json.dumps(mensaje_dict, ensure_ascii=False)
+        contenido_encriptado = encriptar(contenido_json)
         
         logger.debug(f"Enviando mensaje TCP: {contenido_json}")
         
@@ -79,43 +81,41 @@ def enviar_consulta_tcp(mensaje_dict, request=None, ip_custom=None, puerto_custo
             logger.debug(f"Conectando a {host}:{port}")
             s.connect((host, port))
             
-            # Enviar JSON como bytes
-            s.sendall(contenido_json.encode('windows-1252', errors='replace'))
+            # Enviar JSON como bytes UTF-8
+            s.sendall(contenido_encriptado.encode('latin-1', errors='replace'))
             logger.debug("JSON enviado correctamente")
             
-            # Recibir respuesta (buffer de 2048 bytes)
+            # Recibir respuesta
             try:
-                respuesta_bytes = s.recv(2048)
-                if respuesta_bytes:
-                    # Decodificar respuesta intentando múltiples codificaciones
-                    respuesta_str = decodificar_respuesta_servidor(respuesta_bytes)
-                    logger.debug(f"Respuesta recibida: {respuesta_str[:200]}...")  # Log primeros 200 chars
-                    
+                respuesta = s.recv(2048)
+                if respuesta:
+                    respuesta_str = decodificar_respuesta_servidor(respuesta)
+                    logger.debug(f"Respuesta recibida: {respuesta_str}")
+
+                    respuesta_desencriptada = desencriptar(respuesta_str)
+                    logger.debug(f"Respuesta desencriptada: {respuesta_desencriptada}")                    
                     try:
-                        respuesta_dict = json.loads(respuesta_str)
-                        logger.debug("Respuesta JSON parseada correctamente")
-                        return respuesta_dict
+                        return json.loads(respuesta_desencriptada)
                     except json.JSONDecodeError as e:
-                        logger.error(f"Error al parsear JSON de respuesta: {e}")
-                        logger.debug(f"Respuesta raw: {respuesta_str}")
+                        logger.error(f"Error al decodificar JSON: {e}")
                         return {
                             'estado': False,
                             'mensaje': 'Respuesta inválida del servidor',
                             'respuesta_raw': respuesta_str
                         }
                 else:
-                    logger.error("No se recibió respuesta del servidor (buffer vacío)")
+                    logger.error("No se recibió respuesta del servidor")
                     return {
                         'estado': False,
                         'mensaje': 'No se recibió respuesta del servidor'
                     }
             except socket.timeout:
-                logger.error("Tiempo de espera agotado esperando respuesta del servidor")
-                return { 
+                logger.error("Tiempo de espera agotado esperando respuesta")
+                return {
                     'estado': False,
                     'mensaje': 'Tiempo de espera agotado esperando respuesta'
-                }
-                
+                }           
+            
     except ConnectionRefusedError:
         logger.error(f"El servidor rechazó la conexión en {host}:{port}")
         return {
