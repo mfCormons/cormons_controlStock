@@ -1,0 +1,33 @@
+<div class="card-body p-0">
+  {% if pendientes and pendientes|length > 0 %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th class="fw-semibold">Fecha Solicitud</th>
+            <th class="fw-semibold">Código</th>
+            <th class="fw-semibold">Descripción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in pendientes %}
+            <tr class="solicitud-row"
+                data-id="{% if item.0 %}{{ item.0 }}{% else %}{{ item.idSolicitud|default:'' }}{% endif %}"
+                data-cod="{% if item.1 %}{{ item.1 }}{% else %}{{ item.codigo|default:'' }}{% endif %}"
+                data-desc="{% if item.2 %}{{ item.2 }}{% else %}{{ item.descripcion|default:'' }}{% endif %}"
+                data-fecha="{% if item.3 %}{{ item.3 }}{% else %}{{ item.fecha|default:'' }}{% endif %}"
+                onclick="abrirModalControlFromRow(this)">
+              <td>{% if item.3 %}{{ item.3 }}{% else %}{{ item.fecha|default:'' }}{% endif %}</td>
+              <td>{% if item.1 %}{{ item.1 }}{% else %}{{ item.codigo|default:'' }}{% endif %}</td>
+              <td>{% if item.2 %}{{ item.2 }}{% else %}{{ item.descripcion|default:'' }}{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="card-body p-4 text-center">
+      <div class="alert alert-info mb-0">No hay solicitudes pendientes</div>
+    </div>
+  {% endif %}
+</div>

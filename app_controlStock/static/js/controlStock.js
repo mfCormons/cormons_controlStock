@@ -26,11 +26,11 @@
     if (modalElement && window.bootstrap) {
         modalControl = new bootstrap.Modal(modalElement);
 
-        // Recargar solicitudes al cerrar modal (cumple requisito)
+        // Recargar la página al cerrar modal (server re-render traerá nuevos pendientes)
         modalElement.addEventListener('hidden.bs.modal', function() {
-            console.log('🔄 Modal cerrado - Recargando solicitudes');
+            console.log('🔄 Modal cerrado - Recargando página');
             solicitudSeleccionada = null;
-            cargarSolicitudes();
+            window.location.reload();
         });
     }
 
@@ -44,218 +44,56 @@
         });
     }
 
-    const btnActualizar = document.getElementById('btnActualizar');
-    if (btnActualizar) {
-        btnActualizar.addEventListener('click', function() {
-            console.log('🔁 Botón actualizar presionado');
-            cargarSolicitudes();
-        });
-    }
+    // El botón "Actualizar" en la plantilla hace un reload simple (onclick="location.reload()")
 
-    // Cargar solicitudes al inicio (cada vez que se recarga la página)
-    window.addEventListener('load', function() {
-        console.log('🚀 Página cargada - Ejecutando verificación de token y carga de solicitudes');
-        // Pequeño timeout para asegurar que otros scripts (si los hay) terminen de inicializar
-        setTimeout(() => {
-            // Verificar token antes de cargar
-            const token = obtenerToken();
-            if (!token) {
-                console.warn('❌ No se encontró token. Redirigiendo al login.');
-                // Ajusta la URL de login según tu app
-                setTimeout(() => {
-                    window.location.href = '/login/?next=/';
-                }, 1000);
-                return;
-            }
-            cargarSolicitudes();
-        }, 150);
-    });
-
-    // Exponer funciones útiles globalmente si es necesario
-    window.cargarSolicitudes = cargarSolicitudes;
+    // Exponer funciones globales necesarias
     window.abrirModalControl = abrirModalControl;
     window.confirmarControl = confirmarControl;
     window.cerrarSesion = cerrarSesion;
 
-    // ====== Lógica principal ======
-
-    function cargarSolicitudes() {
-        console.log('📋 Iniciando carga de solicitudes (pendientes)...');
-
-        const token = obtenerToken();
-        if (!token) {
-            console.error('❌ No hay token de autenticación');
-            mostrarError("Autenticación no encontrada. Redirigiendo al login...");
-            setTimeout(() => window.location.href = '/login/', 1500);
-            return;
-        }
-
-        const container = document.getElementById('solicitudes-container');
-        if (!container) {
-            console.error('❌ No se encontró el contenedor #solicitudes-container en el DOM');
-            return;
-        }
-
-        // Mostrar estado de carga
-        container.innerHTML = `
-            <div class="card-body p-4 text-center">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Cargando...</span>
-                </div>
-                <p class="mt-3 text-muted">Cargando solicitudes...</p>
-            </div>
-        `;
-
-        // Headers opcionales desde localStorage (según referencia)
-        const headers = { 'Content-Type': 'application/json' };
-        const empresaIP = localStorage.getItem('empresaIP');
-        const empresaPuerto = localStorage.getItem('empresaPuerto');
-        const empresaCodigo = localStorage.getItem('empresaCodigo');
-        const nombreEmpresa = localStorage.getItem('nombre_empresa');
-
-        if (empresaIP) headers['X-Empresa-IP'] = empresaIP;
-        if (empresaPuerto) headers['X-Empresa-Puerto'] = empresaPuerto;
-        if (empresaCodigo) headers['X-Empresa-Codigo'] = empresaCodigo;
-        if (nombreEmpresa) headers['X-Empresa-Nombre'] = nombreEmpresa;
-
-        // URL de listado: llamar a la vista JSON de la app
-        // Esta vista (/pendientes/) verificará token y enviará el comando controlPendientes
-        const url = '/pendientes/';
-
-        fetch(url, {
-            method: 'GET',
-            headers: headers,
-            credentials: 'same-origin' // manda cookies si hacen falta
-        })
-        .then(response => {
-            console.log("📡 Response status:", response.status);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            return response.json();
-        })
-        .then(data => {
-            console.log("📋 Respuesta servidor listar:", data);
-
-            // Normalizar estado: puede venir como booleano o como 'T'/'F' o 'estado'/'Estado'
-            let estado = null;
-            if (data.hasOwnProperty('estado')) estado = data.estado;
-            else if (data.hasOwnProperty('Estado')) {
-                const s = String(data.Estado).toUpperCase();
-                estado = (s === 'T' || s === 'TRUE' || s === '1' || s === 'OK');
-            }
-
-            // Si hay deposito en la respuesta, actualizar el header dinámicamente
-            const depositoVal = data.deposito || data.Deposito || data.DEPOSITO;
-            if (depositoVal) {
-                const depEl = document.getElementById('deposito-info');
-                if (depEl) depEl.textContent = String(depositoVal).replace(/^\[.*?\]\s*/,'');
-            }
-
-            // Manejo de sesión expirada (texto en mensaje)
-            const mensaje = data.mensaje || data.Mensaje || '';
-            if (estado === false && mensaje.toLowerCase().includes('sesion expirada')) {
-                alert('⚠️ Su sesión ha expirado. Será redirigido al login.');
-                localStorage.setItem('requere_credenciales', 'true');
-                localStorage.setItem('sesion_activa', 'false');
-                window.location.href = '/login/?sesion_expirada=1';
-                return;
-            }
-
-            // Obtener lista de items en diferentes posibles campos
-            let items = [];
-            if (Array.isArray(data.pendientes) && data.pendientes.length) items = data.pendientes;
-            else if (Array.isArray(data.PENDIENTES) && data.PENDIENTES.length) items = data.PENDIENTES;
-            else if (Array.isArray(data.PRODUCTOS) && data.PRODUCTOS.length) items = data.PRODUCTOS;
-            else if (Array.isArray(data.productos) && data.productos.length) items = data.productos;
-            else if (Array.isArray(data.solicitudes) && data.solicitudes.length) items = data.solicitudes;
-
-            if (items && items.length > 0) {
-                // Mostrar los items (pueden ser arrays o objetos)
-                mostrarSolicitudes(items);
-            } else {
-                // Si el endpoint devuelve estado explícito false, mostrar mensaje del servidor
-                if (estado === false) {
-                    mostrarError(mensaje || 'Error al cargar solicitudes');
-                } else {
-                    mostrarMensaje("✅ No hay solicitudes pendientes", "success");
-                }
-            }
-        })
-        .catch(err => {
-            console.error('❌ Error al cargar solicitudes:', err);
-            mostrarError('Error al cargar solicitudes. Intente de nuevo.');
-        });
-    }
+    // ====== Lógica principal (simplificada para server-render) ======
 
     function mostrarSolicitudes(solicitudes) {
-        console.log('📋 Mostrando solicitudes:', solicitudes.length);
-        const container = document.getElementById('solicitudes-container');
-        const template = document.getElementById('solicitudes-template');
-
-        // Si existe template, clonarlo; si no, crear tabla básica
-        if (template && template.content) {
-            const clone = template.content.cloneNode(true);
-            const tbody = clone.querySelector('#solicitudes-tbody');
-            if (tbody) {
-                solicitudes.forEach(sol => {
-                    const tr = document.createElement('tr');
-                    tr.className = 'solicitud-row';
-                    // Ajusta campos según la estructura que envía tu backend
-                    tr.innerHTML = `
-                        <td>${sol.fecha_solicitud || ''}</td>
-                        <td>${sol.codigo_producto || sol.codigo || ''}</td>
-                        <td>${sol.descripcion_producto || sol.descripcion || ''}</td>
-                    `;
-                    tr.addEventListener('click', () => abrirModalControl(sol));
-                    tbody.appendChild(tr);
-                });
-                container.innerHTML = '';
-                container.appendChild(clone);
-                return;
-            }
-        }
-
-        // Fallback: render simple lista
-        container.innerHTML = '';
-        const table = document.createElement('table');
-        table.className = 'table';
-        const tbody = document.createElement('tbody');
-        solicitudes.forEach(sol => {
-            const tr = document.createElement('tr');
-            tr.className = 'solicitud-row';
-            const fecha = sol.fecha_solicitud || '';
-            const codigo = sol.codigo_producto || sol.codigo || '';
-            const desc = sol.descripcion_producto || sol.descripcion || '';
-            tr.innerHTML = `<td>${fecha}</td><td>${codigo}</td><td>${desc}</td>`;
-            tr.addEventListener('click', () => abrirModalControl(sol));
-            tbody.appendChild(tr);
-        });
-        table.appendChild(tbody);
-        container.appendChild(table);
+        // En la opción A (server-render) esta función no se usa; queda para compatibilidad.
+        console.log('mostrarSolicitudes llamado (no usado en server-render)');
     }
 
     function abrirModalControl(solicitud) {
         console.log('📋 Abriendo modal para:', solicitud);
-        solicitudSeleccionada = solicitud;
 
-        // Llenar modal según IDs que usa la plantilla de referencia
+        // Acepta como 'solicitud' un objeto con keys: idSolicitud, codigo, descripcion, fecha
+        solicitudSeleccionada = solicitud || {};
+
         const modalDescripcion = document.getElementById('modal-descripcion');
         const modalCodigo = document.getElementById('modal-codigo');
         const cantidadInputEl = document.getElementById('cantidad-contada');
 
-        if (modalDescripcion) modalDescripcion.textContent = solicitud.descripcion_producto || solicitud.descripcion || '';
-        if (modalCodigo) modalCodigo.textContent = solicitud.codigo_producto || solicitud.codigo || '';
+        const desc = solicitud.descripcion_producto || solicitud.descripcion || solicitud.desc || solicitud.descripcion_producto || solicitud.descripcion || solicitud.description || '';
+        const cod = solicitud.codigo_producto || solicitud.codigo || solicitud.cod || '';
+
+        if (modalDescripcion) modalDescripcion.textContent = desc;
+        if (modalCodigo) modalCodigo.textContent = cod;
         if (cantidadInputEl) cantidadInputEl.value = '';
 
         if (modalControl) {
             modalControl.show();
-            setTimeout(() => {
-                if (cantidadInputEl) cantidadInputEl.focus();
-            }, 300);
+            setTimeout(() => { if (cantidadInputEl) cantidadInputEl.focus(); }, 300);
         } else {
-            // Si no hay modal bootstrap, mostrar fallback simple
-            alert(`Cargar stock para: ${solicitud.codigo_producto || solicitud.codigo || ''}`);
+            alert(`Cargar stock para: ${cod}`);
         }
     }
+
+    // Helper: abrir modal desde una fila que contiene data-* attributes
+    window.abrirModalControlFromRow = function(el) {
+        if (!el || !el.dataset) return;
+        const obj = {
+            idSolicitud: el.dataset.id || el.getAttribute('data-id') || '',
+            codigo: el.dataset.cod || el.getAttribute('data-cod') || '',
+            descripcion: el.dataset.desc || el.getAttribute('data-desc') || '',
+            fecha: el.dataset.fecha || el.getAttribute('data-fecha') || ''
+        };
+        abrirModalControl(obj);
+    };
 
     function confirmarControl() {
         if (!solicitudSeleccionada) {
@@ -314,7 +152,8 @@
             token: token,
             vista: 'control-stock',
             cantidad: cantidadContada,
-            codigo_producto: solicitudSeleccionada.codigo_producto || solicitudSeleccionada.codigo || ''
+            codigo_producto: solicitudSeleccionada.codigo_producto || solicitudSeleccionada.codigo || solicitudSeleccionada.cod || '' ,
+            idSolicitud: solicitudSeleccionada.idSolicitud || solicitudSeleccionada[0] || ''
         };
 
         fetch('/control-stock/registrar/', {
@@ -339,10 +178,10 @@
 
             if (data.estado === true || data.estado === 'T') {
                 if (modalControl) {
-                    modalControl.hide(); // El listener 'hidden.bs.modal' recargará solicitudes
+                    modalControl.hide(); // El listener 'hidden.bs.modal' recargará la página
                 } else {
                     // Si no hay bootstrap, recargar manualmente
-                    cargarSolicitudes();
+                    window.location.reload();
                 }
                 alert('✅ ' + (data.mensaje || 'Control registrado correctamente'));
                 solicitudSeleccionada = null;
