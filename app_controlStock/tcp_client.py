@@ -6,8 +6,35 @@ import logging
 import socket
 import json
 from .__init__ import APP_VERSION, TCP_TIMEOUT, TCP_ENABLED
+from .utils import get_connection_config
 
-logger = logging.getLogger(__name__)    
+logger = logging.getLogger(__name__)
+
+
+def decodificar_respuesta_servidor(respuesta_bytes):
+    """
+    Decodifica respuesta del servidor intentando múltiples codificaciones.
+    
+    Args:
+        respuesta_bytes: Bytes recibidos del servidor
+    
+    Returns:
+        str: String decodificado
+    """
+    codificaciones = ['utf-8', 'windows-1252', 'latin-1', 'iso-8859-1', 'cp1252']
+    
+    for codificacion in codificaciones:
+        try:
+            respuesta_str = respuesta_bytes.decode(codificacion)
+            logger.debug(f"Respuesta decodificada con {codificacion}")
+            return respuesta_str
+        except (UnicodeDecodeError, LookupError):
+            continue
+    
+    # Si ninguna codificación funciona, usar 'replace' para evitar errores
+    logger.warning("No se pudo decodificar con ninguna codificación estándar, usando 'replace'")
+    return respuesta_bytes.decode('utf-8', errors='replace')
+
 
 def enviar_consulta_tcp(mensaje_dict, request=None, ip_custom=None, puerto_custom=None):
     """
@@ -17,17 +44,23 @@ def enviar_consulta_tcp(mensaje_dict, request=None, ip_custom=None, puerto_custo
         logger.warning("TCP está deshabilitado")
         return {"estado": False, "mensaje": "Servicio no disponible"}
 
-    # Determinar IP y Puerto a usar
+    # Determinar IP y Puerto a usar (prioridad: ip_custom/puerto_custom > request > error)
     if ip_custom and puerto_custom:
-        # Usar IP/Puerto específicos
+        # Prioridad 1: Usar IP/Puerto específicos si se proporcionan
         host = ip_custom
-        port = puerto_custom
+        try:
+            port = int(puerto_custom) if isinstance(puerto_custom, str) else puerto_custom
+        except (ValueError, TypeError):
+            logger.error(f"Puerto inválido: {puerto_custom}")
+            return {"estado": False, "mensaje": "Puerto inválido"}
+        logger.debug(f"Usando IP/Puerto personalizados: {host}:{port}")
     elif request:
-        # Obtener desde configuración de sesión o cookies
+        # Prioridad 2: Obtener desde configuración de sesión o cookies
         host, port = get_connection_config(request)
         if not host or not port:
             logger.error("No hay configuración de cliente válida")
             return {"estado": False, "mensaje": "No hay cliente configurado"}
+        logger.debug(f"Usando configuración de request: {host}:{port}")
     else:
         logger.error("No se proporcionó configuración de conexión")
         return {"estado": False, "mensaje": "Configuración de conexión requerida"}
@@ -50,30 +83,34 @@ def enviar_consulta_tcp(mensaje_dict, request=None, ip_custom=None, puerto_custo
             s.sendall(contenido_json.encode('windows-1252', errors='replace'))
             logger.debug("JSON enviado correctamente")
             
-            # Recibir respuesta
+            # Recibir respuesta (buffer de 2048 bytes)
             try:
-                respuesta = s.recv(2048)
-                if respuesta:
-                    respuesta_str = decodificar_respuesta_servidor(respuesta)
-                    logger.debug(f"Respuesta recibida: {respuesta_str}")
+                respuesta_bytes = s.recv(2048)
+                if respuesta_bytes:
+                    # Decodificar respuesta intentando múltiples codificaciones
+                    respuesta_str = decodificar_respuesta_servidor(respuesta_bytes)
+                    logger.debug(f"Respuesta recibida: {respuesta_str[:200]}...")  # Log primeros 200 chars
                     
                     try:
-                        return json.loads(respuesta_str)
+                        respuesta_dict = json.loads(respuesta_str)
+                        logger.debug("Respuesta JSON parseada correctamente")
+                        return respuesta_dict
                     except json.JSONDecodeError as e:
-                        logger.error(f"Error al decodificar JSON: {e}")
+                        logger.error(f"Error al parsear JSON de respuesta: {e}")
+                        logger.debug(f"Respuesta raw: {respuesta_str}")
                         return {
                             'estado': False,
                             'mensaje': 'Respuesta inválida del servidor',
                             'respuesta_raw': respuesta_str
                         }
                 else:
-                    logger.error("No se recibió respuesta del servidor")
+                    logger.error("No se recibió respuesta del servidor (buffer vacío)")
                     return {
                         'estado': False,
                         'mensaje': 'No se recibió respuesta del servidor'
                     }
             except socket.timeout:
-                logger.error("Tiempo de espera agotado esperando respuesta")
+                logger.error("Tiempo de espera agotado esperando respuesta del servidor")
                 return { 
                     'estado': False,
                     'mensaje': 'Tiempo de espera agotado esperando respuesta'
@@ -85,11 +122,21 @@ def enviar_consulta_tcp(mensaje_dict, request=None, ip_custom=None, puerto_custo
             'estado': False,
             'mensaje': 'El servidor rechazó la conexión'
         }
+    except socket.gaierror as e:
+        logger.error(f"Error de resolución de nombre (DNS) para {host}:{port}: {e}")
+        return {
+            'estado': False,
+            'mensaje': f'Error de conexión: No se pudo resolver {host}'
+        }
+    except OSError as e:
+        logger.error(f"Error del sistema operativo en conexión TCP: {e}")
+        return {
+            'estado': False,
+            'mensaje': f'Error de conexión: {str(e)}'
+        }
     except Exception as e:
-        logger.error(f"Error inesperado en comunicación TCP: {e}")
+        logger.error(f"Error inesperado en comunicación TCP: {e}", exc_info=True)
         return {
             'estado': False,
             'mensaje': f'Error inesperado: {e}'
         }
-    finally:
-        logger.debug("Conexión cerrada")

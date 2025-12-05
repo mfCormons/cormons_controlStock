@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 import logging
 from .utils import obtener_datos_cookies, renderizar_error, renderizar_exito
-from .services import verificar_token_valido, obtener_stock_pendientes
+from .services import comando_verificarToken, comando_controlPendientes, comando_stockControlado
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ def controlStock_view(request):
     empresa_nombre = datos_conexion.get('nombre', 'Empresa')
     
     # PASO 2: Verificar token
-    respuesta_token = verificar_token_valido(token, request)
+    respuesta_token = comando_verificarToken(token, request)
     
     if not respuesta_token:
         mensaje = 'Token inválido o expirado'
@@ -38,7 +38,7 @@ def controlStock_view(request):
     nombre = respuesta_token.get('nombre', respuesta_token.get('Nombre', ''))
 
     # PASO 3: Obtener apps disponibles
-    respuesta_pendientes = obtener_stock_pendientes(token, request)
+    respuesta_pendientes = comando_controlPendientes(token, request)
     
     if not respuesta_pendientes:
         mensaje = 'Error al obtener stock pendientes'

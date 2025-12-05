@@ -3,7 +3,6 @@ Servicios y lógica de negocio para la aplicación controlStock
 Incluye llamadas a APIs externas y validaciones
 """
 import logging
-import requests
 from .tcp_client import enviar_consulta_tcp
 from .__init__ import APP_VERSION
 
@@ -77,7 +76,7 @@ def comando_controlPendientes(token, request):
         "Comando": "controlPendientes",
         "Token": token,
         "Vista": "CONTROLSTOCK",
-        "usrActivo": usuario_activo
+        "usrActivo": "usuarioPrueba"
     }
     
     logger.info(f"[CONTROLSTOCK] Consultando stock pendientes para token: {token[:10]}... (Version: {APP_VERSION})")
