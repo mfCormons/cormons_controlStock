@@ -20,13 +20,19 @@ def controlStock_view(request):
     logger.debug("==== CONTROL STOCK VIEW ====")
     
     # PASO 1: Obtener y validar cookies
+    logger.debug("Obteniendo cookies...")
     token, datos_conexion = obtener_datos_cookies(request)
+    logger.debug(f"Token obtenido: {token[:10] if token else 'None'}")
+    logger.debug(f"Datos de conexión: {datos_conexion}")
     #DESCOMENTAR DESPUES DE HARDCODEAR COOKIES
     if not token or not datos_conexion:
         return redirect('http://login.cormonsapp.com/login/')
     
+    logger.debug("Cookies válidas.")
+    
     empresa_nombre = datos_conexion.get('nombre', 'Empresa')
     
+    logger.debug("Verificando token...")
     # PASO 2: Verificar token
     respuesta_token = comando_verificarToken(token, request)
     

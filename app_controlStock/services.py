@@ -13,7 +13,7 @@ def comando_verificarToken(token, request):
     Verifica si el token es válido con VFP
     Returns: dict con datos del usuario si es válido, None si falla
     """
-    logger.debug("Verificando token con VFP...")
+    logger.debug("dentro de comando_verificarToken...")
     
     # Preparar mensaje
     mensaje = {
@@ -27,6 +27,7 @@ def comando_verificarToken(token, request):
     
     # Enviar consulta TCP
     respuesta = enviar_consulta_tcp(mensaje, request=request)
+    logger.debug(f"Respuesta recibida: {respuesta}")
     
     # Validar respuesta
     if not respuesta or not respuesta.get("Estado"):
