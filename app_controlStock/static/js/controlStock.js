@@ -44,7 +44,7 @@
         });
     }
 
-    const btnActualizar = document.getElementById('btn-actualizar');
+    const btnActualizar = document.getElementById('btnActualizar');
     if (btnActualizar) {
         btnActualizar.addEventListener('click', function() {
             console.log('🔁 Botón actualizar presionado');
@@ -118,9 +118,9 @@
         if (empresaCodigo) headers['X-Empresa-Codigo'] = empresaCodigo;
         if (nombreEmpresa) headers['X-Empresa-Nombre'] = nombreEmpresa;
 
-        // URL de listado (mantengo la ruta del archivo de referencia).
-        // Si tu backend expone otro endpoint (p.ej. /api/pendientes/), cámbialo aquí.
-        const url = `/control-stock/listar/?token=${encodeURIComponent(token)}`;
+        // URL de listado: llamar a la vista JSON de la app
+        // Esta vista (/pendientes/) verificará token y enviará el comando controlPendientes
+        const url = '/pendientes/';
 
         fetch(url, {
             method: 'GET',
