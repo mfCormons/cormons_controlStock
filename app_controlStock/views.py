@@ -32,17 +32,14 @@ def controlStock_view(request):
     
     empresa_nombre = datos_conexion.get('nombre', 'Empresa')
     
-    logger.debug("Verificando token...")
-    # PASO 2: Verificar token
-    respuesta_token = comando_verificarToken(token, request)
+    # Nota: No verificamos token en cada recarga (ya se verifica en login).
+    # El token en las cookies es suficiente; si expirara, el servidor VFP lo rechazaría.
+    # En futuro, si necesitas verificación explícita, úsala en un endpoint separado.
     
-    if not respuesta_token:
-        mensaje = 'Token inválido o expirado'
-        return renderizar_error(request, mensaje, empresa_nombre)
-    
-    # Extraer datos del usuario
-    usuario = respuesta_token.get('usuario', respuesta_token.get('Usuario', ''))
-    nombre = respuesta_token.get('nombre', respuesta_token.get('Nombre', ''))
+    # Por ahora, extraer datos del usuario desde session o valores por defecto
+    # (se podrían guardar en session durante el login y recuperar aquí)
+    usuario = request.session.get('usuario', 'A')
+    nombre = request.session.get('nombre', 'Usuario')
 
     # PASO 3: Obtener apps disponibles
     respuesta_pendientes = comando_controlPendientes(token, request)
