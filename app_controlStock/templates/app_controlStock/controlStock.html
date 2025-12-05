@@ -44,13 +44,13 @@
                 <div class="navbar-brand text-primary fw-bold mx-auto text-center">
                     <!-- Línea 1: Nombre de empresa y usuario -->
                     <p id="empresa-usuario-header" class="mb-0">
-                        <span id="empresa-nombre-header">Cargando empresa...</span>
-                        [<span id="usuario-display">Cargando...</span>], <span id="nombre-display">Cargando...</span>
+                        <span id="empresa-nombre-header">{{ empresa_nombre|default:"Empresa" }}</span>
+                        [<span id="usuario-display">{{ usuario|default:"Usuario" }}</span>], <span id="nombre-display">{{ nombre|default:"Nombre" }}</span>
                     </p>
                     <!-- Línea 2: Depósito -->
                     <p class="mb-0 text-muted" style="font-size: 0.9rem;">
                         <i class="fas fa-warehouse me-1"></i>
-                        <span id="deposito-info">Cargando depósito...</span>
+                        <span id="deposito-info">{{ deposito|default:"Depósito no asignado" }}</span>
                     </p>
                 </div>
 
