@@ -28,18 +28,26 @@ def comando_verificarToken(token, request):
     # Enviar consulta TCP
     respuesta = enviar_consulta_tcp(mensaje, request=request)
     logger.debug(f"Respuesta recibida: {respuesta}")
-    
-    # Validar respuesta
-    if not respuesta or not respuesta.get("estado"):
-        mensaje_error = respuesta.get("Mensaje", "Token inválido") if respuesta else "Error de conexión"
+
+    # Validar respuesta: aceptar 'Estado' o 'estado'
+    estado_raw = None
+    if respuesta:
+        estado_raw = respuesta.get("Estado", respuesta.get("estado"))
+    if not respuesta or not estado_raw:
+        mensaje_error = respuesta.get("Mensaje", respuesta.get("mensaje", "Token inválido")) if respuesta else "Error de conexión"
         logger.warning(f"Token inválido: {mensaje_error}")
         return None
-    
-    # Normalizar respuesta (Estado "T"/"F" a booleano)
-    respuesta["estado"] = respuesta["Estado"] == "T"
-    respuesta["mensaje"] = respuesta.get("Mensaje", "")
-    respuesta["usuario"] = respuesta.get("Usuario", "")
-    respuesta["nombre"] = respuesta.get("Nombre", "")
+
+    # Normalizar respuesta: soportar 'T'/'F' o booleanos y claves mayúsc/minúsc
+    if isinstance(estado_raw, bool):
+        estado_bool = estado_raw
+    else:
+        estado_bool = str(estado_raw).upper() in ("T", "TRUE", "1", "OK")
+
+    respuesta["estado"] = estado_bool
+    respuesta["mensaje"] = respuesta.get("Mensaje", respuesta.get("mensaje", ""))
+    respuesta["usuario"] = respuesta.get("Usuario", respuesta.get("usuario", ""))
+    respuesta["nombre"] = respuesta.get("Nombre", respuesta.get("nombre", ""))
     
     # Validar que el estado sea True
     if not respuesta.get("estado"):
@@ -84,10 +92,14 @@ def comando_controlPendientes(token, request):
     respuesta = enviar_consulta_tcp(mensaje, request=request)
     
     # Convertir Estado "T"/"F" a booleano para compatibilidad interna
-    if respuesta and "Estado" in respuesta:
-        respuesta["estado"] = respuesta["Estado"] == "T"
-        respuesta["mensaje"] = respuesta.get("Mensaje", "")
-        respuesta["pendientes"] = respuesta.get("Pendientes", [])
+    if respuesta:
+        estado_raw = respuesta.get("Estado", respuesta.get("estado"))
+    if isinstance(estado_raw, bool):
+        respuesta["estado"] = estado_raw
+    else:
+        respuesta["estado"] = str(estado_raw).upper() in ("T", "TRUE", "1", "OK")
+    respuesta["mensaje"] = respuesta.get("Mensaje", respuesta.get("mensaje", ""))
+    respuesta["pendientes"] = respuesta.get("Pendientes", respuesta.get("pendientes", []))
     
     return respuesta
 
