@@ -135,28 +135,49 @@
         .then(data => {
             console.log("📋 Respuesta servidor listar:", data);
 
-            // Manejo sesión expirada según referencia
-            if (data.estado === false && data.mensaje && data.mensaje.toLowerCase().includes('sesion expirada')) {
+            // Normalizar estado: puede venir como booleano o como 'T'/'F' o 'estado'/'Estado'
+            let estado = null;
+            if (data.hasOwnProperty('estado')) estado = data.estado;
+            else if (data.hasOwnProperty('Estado')) {
+                const s = String(data.Estado).toUpperCase();
+                estado = (s === 'T' || s === 'TRUE' || s === '1' || s === 'OK');
+            }
+
+            // Si hay deposito en la respuesta, actualizar el header dinámicamente
+            const depositoVal = data.deposito || data.Deposito || data.DEPOSITO;
+            if (depositoVal) {
+                const depEl = document.getElementById('deposito-info');
+                if (depEl) depEl.textContent = String(depositoVal).replace(/^\[.*?\]\s*/,'');
+            }
+
+            // Manejo de sesión expirada (texto en mensaje)
+            const mensaje = data.mensaje || data.Mensaje || '';
+            if (estado === false && mensaje.toLowerCase().includes('sesion expirada')) {
                 alert('⚠️ Su sesión ha expirado. Será redirigido al login.');
-                localStorage.setItem('requiere_credenciales', 'true');
+                localStorage.setItem('requere_credenciales', 'true');
                 localStorage.setItem('sesion_activa', 'false');
                 window.location.href = '/login/?sesion_expirada=1';
                 return;
             }
 
-            if (data.estado === true || data.estado === 'T') {
-                // Actualizar header si hay info del servidor
-                if (typeof actualizarHeader === 'function') {
-                    actualizarHeader(data);
-                }
-                // Mostrar solicitudes
-                if (data.solicitudes && data.solicitudes.length > 0) {
-                    mostrarSolicitudes(data.solicitudes);
+            // Obtener lista de items en diferentes posibles campos
+            let items = [];
+            if (Array.isArray(data.pendientes) && data.pendientes.length) items = data.pendientes;
+            else if (Array.isArray(data.PENDIENTES) && data.PENDIENTES.length) items = data.PENDIENTES;
+            else if (Array.isArray(data.PRODUCTOS) && data.PRODUCTOS.length) items = data.PRODUCTOS;
+            else if (Array.isArray(data.productos) && data.productos.length) items = data.productos;
+            else if (Array.isArray(data.solicitudes) && data.solicitudes.length) items = data.solicitudes;
+
+            if (items && items.length > 0) {
+                // Mostrar los items (pueden ser arrays o objetos)
+                mostrarSolicitudes(items);
+            } else {
+                // Si el endpoint devuelve estado explícito false, mostrar mensaje del servidor
+                if (estado === false) {
+                    mostrarError(mensaje || 'Error al cargar solicitudes');
                 } else {
                     mostrarMensaje("✅ No hay solicitudes pendientes", "success");
                 }
-            } else {
-                mostrarError(data.mensaje || 'Error al cargar solicitudes');
             }
         })
         .catch(err => {
