@@ -30,7 +30,7 @@ def comando_verificarToken(token, request):
     logger.debug(f"Respuesta recibida: {respuesta}")
     
     # Validar respuesta
-    if not respuesta or not respuesta.get("Estado"):
+    if not respuesta or not respuesta.get("estado"):
         mensaje_error = respuesta.get("Mensaje", "Token inválido") if respuesta else "Error de conexión"
         logger.warning(f"Token inválido: {mensaje_error}")
         return None
