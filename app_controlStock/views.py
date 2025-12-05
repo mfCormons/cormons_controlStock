@@ -32,17 +32,25 @@ def controlStock_view(request):
     
     empresa_nombre = datos_conexion.get('nombre', 'Empresa')
     
-    # Nota: No verificamos token en cada recarga (ya se verifica en login).
-    # El token en las cookies es suficiente; si expirara, el servidor VFP lo rechazaría.
-    # En futuro, si necesitas verificación explícita, úsala en un endpoint separado.
-    
-    # Por ahora, extraer datos del usuario desde session o valores por defecto
-    # (se podrían guardar en session durante el login y recuperar aquí)
-    usuario = request.session.get('usuario', 'A')
-    nombre = request.session.get('nombre', 'Usuario')
+    # Si es la primera vez que el usuario llega a la URL raíz, debemos
+    # verificar el token y guardar usuario/nombre en session.
+    usuario = request.session.get('usuario')
+    nombre = request.session.get('nombre')
+    if not usuario or not nombre:
+        # Ejecutar verificarToken una sola vez al llegar
+        respuesta_token = comando_verificarToken(token, request)
+        if not respuesta_token:
+            # Token inválido: redirigir al login
+            return redirect('http://login.cormonsapp.com/login/')
+        usuario = respuesta_token.get('usuario', 'A')
+        nombre = respuesta_token.get('nombre', 'Usuario')
+        # Guardar en session para posteriores acciones (actualizar/modal-close)
+        request.session['usuario'] = usuario
+        request.session['nombre'] = nombre
 
     # PASO 3: Obtener apps disponibles
-    respuesta_pendientes = comando_controlPendientes(token, request)
+    # Obtener pendientes usando el usuario activo de la sesión
+    respuesta_pendientes = comando_controlPendientes(token, request, usrActivo=usuario)
 
     if not respuesta_pendientes:
         mensaje = 'Error al obtener stock pendientes'
@@ -97,13 +105,13 @@ def controlPendientes_view(request):
     if not token:
         return JsonResponse({"error": "Faltan cookies de autenticación"}, status=401)
 
-    # Verificar token (usa comando_verificarToken)
-    respuesta_token = comando_verificarToken(token, request)
-    if not respuesta_token:
-        return JsonResponse({"error": "Token inválido o expirado"}, status=401)
+    # Para las acciones UI (botón actualizar, cerrar modal) NO debemos
+    # ejecutar verificarToken de nuevo. Usamos el usuario guardado en session
+    usuario = request.session.get('usuario')
+    if not usuario:
+        return JsonResponse({"error": "Sesión inválida - reingrese"}, status=401)
 
-    # Obtener pendientes
-    respuesta_pendientes = comando_controlPendientes(token, request)
+    respuesta_pendientes = comando_controlPendientes(token, request, usrActivo=usuario)
     if not respuesta_pendientes:
         return JsonResponse({"error": "Error al obtener pendientes"}, status=500)
 
