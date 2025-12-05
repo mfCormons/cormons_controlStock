@@ -46,12 +46,35 @@ def controlStock_view(request):
 
     # PASO 3: Obtener apps disponibles
     respuesta_pendientes = comando_controlPendientes(token, request)
-    
+
     if not respuesta_pendientes:
         mensaje = 'Error al obtener stock pendientes'
         return renderizar_error(request, mensaje, empresa_nombre)
-    
-    pendientes = respuesta_pendientes.get('pendientes', [])
+
+    # Normalizar distintas formas de respuesta desde VFP
+    pendientes = []
+    # Preferir campo 'pendientes' si está presente
+    if isinstance(respuesta_pendientes.get('pendientes'), list) and respuesta_pendientes.get('pendientes'):
+        pendientes = respuesta_pendientes.get('pendientes')
+    # Soportar respuestas con 'PRODUCTOS' (temporal/provisoria)
+    elif isinstance(respuesta_pendientes.get('PRODUCTOS'), list) and respuesta_pendientes.get('PRODUCTOS'):
+        productos = respuesta_pendientes.get('PRODUCTOS')
+        # Mapear cada producto a un dict con claves esperadas por la plantilla
+        pendientes = []
+        for p in productos:
+            pendientes.append({
+                'idSolicitud': p.get('idSolicitud', ''),
+                'codigo': p.get('codigo') or p.get('cod') or '',
+                'descripcion': p.get('descripcion') or p.get('desc') or '',
+                'fecha': p.get('fecha', '')
+            })
+    else:
+        # Fallback: intentar otros campos posibles
+        for key in ('PENDIENTES', 'productos', 'PRODUCTOS'):
+            val = respuesta_pendientes.get(key)
+            if isinstance(val, list) and val:
+                pendientes = val
+                break
     
     # PASO 4: Renderizar éxito
     # al final de controlStock_view, en lugar de lo actual:
