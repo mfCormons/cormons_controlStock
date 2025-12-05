@@ -3,6 +3,8 @@ import logging
 from django.http import JsonResponse
 from .utils import obtener_datos_cookies, renderizar_error, renderizar_exito
 from .services import comando_verificarToken, comando_controlPendientes, comando_stockControlado
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +119,33 @@ def controlPendientes_view(request):
 
     pendientes = respuesta_pendientes.get("pendientes", [])
     return JsonResponse({"pendientes": pendientes}, status=200)
+
+
+@csrf_exempt
+@require_POST
+def stockControlado_view(request):
+    """
+    Endpoint que recibe POST con idSolicitud y cantidad, llama comando_stockControlado y responde JSON.
+    Espera JSON: {token, idSolicitud, cantidad}
+    """
+    import json
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+    except Exception:
+        return JsonResponse({"estado": False, "mensaje": "JSON inválido"}, status=400)
+
+    token = data.get('token')
+    idSolicitud = data.get('idSolicitud')
+    cantidad = data.get('cantidad')
+    if not token or not idSolicitud or cantidad is None:
+        return JsonResponse({"estado": False, "mensaje": "Faltan datos obligatorios"}, status=400)
+
+    usuario = request.session.get('usuario')
+    if not usuario:
+        return JsonResponse({"estado": False, "mensaje": "Sesión expirada. Reingrese."}, status=401)
+
+    respuesta = comando_stockControlado(token, request, usuario, idSolicitud, cantidad)
+    return JsonResponse({"estado": respuesta.get('estado', False), "mensaje": respuesta.get('mensaje', '')})
 
 def logout_view(request):
     """
