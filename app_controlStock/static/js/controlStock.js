@@ -121,8 +121,9 @@
             return;
         }
 
-        const mensajeConfirm = `¿Registrar ${cantidadContada} unidades para ${solicitudSeleccionada.codigo_producto || solicitudSeleccionada.codigo || ''}?`;
-        if (!confirm(mensajeConfirm)) return;
+        // Confirmación extra antes de enviar
+        const mensajeConfirm = `¿Está seguro que desea registrar ${cantidadContada} unidades para el código ${solicitudSeleccionada.codigo || solicitudSeleccionada.codigo_producto || ''}?`;
+        if (!window.confirm(mensajeConfirm)) return;
 
         // Botón confirmar en modal (si existe)
         const btnConfirmar = modalElement ? modalElement.querySelector('.btn-success') : null;
@@ -138,22 +139,12 @@
             'Content-Type': 'application/json',
             'X-CSRFToken': getCookie('csrftoken') || ''
         };
-        const empresaIP = localStorage.getItem('empresaIP');
-        const empresaPuerto = localStorage.getItem('empresaPuerto');
-        const empresaCodigo = localStorage.getItem('empresaCodigo');
-        const nombreEmpresa = localStorage.getItem('nombre_empresa');
-        if (empresaIP) headers['X-Empresa-IP'] = empresaIP;
-        if (empresaPuerto) headers['X-Empresa-Puerto'] = empresaPuerto;
-        if (empresaCodigo) headers['X-Empresa-Codigo'] = empresaCodigo;
-        if (nombreEmpresa) headers['X-Empresa-Nombre'] = nombreEmpresa;
 
         // Body según referencia (ajusta keys según tu backend)
         const body = {
             token: token,
-            vista: 'control-stock',
-            cantidad: cantidadContada,
-            codigo_producto: solicitudSeleccionada.codigo_producto || solicitudSeleccionada.codigo || solicitudSeleccionada.cod || '' ,
-            idSolicitud: solicitudSeleccionada.idSolicitud || solicitudSeleccionada[0] || ''
+            idSolicitud: solicitudSeleccionada.idSolicitud || solicitudSeleccionada[0] || '',
+            cantidad: cantidadContada
         };
 
         fetch('/control-stock/registrar/', {
