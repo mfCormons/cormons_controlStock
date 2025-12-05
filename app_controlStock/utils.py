@@ -111,7 +111,7 @@ def renderizar_error(request, mensaje, empresa_nombre):
         'mensaje': mensaje,
         'empresa_nombre': empresa_nombre
     }
-    return render(request, 'landing/landing.html', context)
+    return render(request, 'app_controlStock/controlStock.html', context)
 
 
 def renderizar_exito(request, usuario, nombre, empresa_nombre, apps):
@@ -125,5 +125,5 @@ def renderizar_exito(request, usuario, nombre, empresa_nombre, apps):
         'empresa_nombre': empresa_nombre,
         'apps': apps,
     }
-    return render(request, 'landing/landing.html', context)
+    return render(request, 'app_controlStock/controlStock.html', context)
 
