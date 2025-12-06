@@ -225,7 +225,18 @@ def stockControlado_view(request):
 
 def logout_view(request):
     """
-    Cierra sesión y redirige al login
+    Cierra sesión: limpia sesión y cookies, luego redirige al login
     """
     logger.debug("==== LOGOUT VIEW CONTROL STOCK ====")
-    return redirect('http://login.cormonsapp.com/logout/')
+    
+    # Limpiar sesión de Django
+    request.session.flush()
+    
+    # Preparar respuesta de redirección
+    response = redirect('http://login.cormonsapp.com/logout/')
+    
+    # Eliminar cookies de autenticación
+    response.delete_cookie('authToken')
+    response.delete_cookie('connection_config')
+    
+    return response

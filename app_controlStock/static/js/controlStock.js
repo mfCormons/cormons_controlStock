@@ -6,6 +6,7 @@
     // Variables/elementos principales
     let solicitudSeleccionada = null;
     let modalControl = null;
+    let modalLogout = null;
 
     // Helpers para cookies
     function getCookie(name) {
@@ -34,6 +35,11 @@
         });
     }
 
+    const modalLogoutElement = document.getElementById('modalLogout');
+    if (modalLogoutElement && window.bootstrap) {
+        modalLogout = new bootstrap.Modal(modalLogoutElement);
+    }
+
     const cantidadInput = document.getElementById('cantidad-contada');
     if (cantidadInput) {
         cantidadInput.addEventListener('keypress', function(e) {
@@ -50,6 +56,7 @@
     window.abrirModalControl = abrirModalControl;
     window.confirmarControl = confirmarControl;
     window.cerrarSesion = cerrarSesion;
+    window.confirmarLogout = confirmarLogout;   
 
     // ====== Lógica principal (simplificada para server-render) ======
 
@@ -82,6 +89,8 @@
             alert(`Cargar stock para: ${cod}`);
         }
     }
+
+    
 
     // Helper: abrir modal desde una fila que contiene data-* attributes
     window.abrirModalControlFromRow = function(el) {
@@ -147,7 +156,7 @@
             cantidad: cantidadContada
         };
 
-        fetch('/control-stock/registrar/', {
+        fetch('/registrar/', {
             method: 'POST',
             headers: headers,
             body: JSON.stringify(body),
@@ -216,12 +225,23 @@
     }
 
     function cerrarSesion() {
-        if (confirm('¿Cerrar sesión?')) {
-            localStorage.setItem('requiere_credenciales', 'true');
-            localStorage.setItem('sesion_activa', 'false');
+    if (modalLogout) {
+        modalLogout.show();
+    } else {
+        // Fallback si Bootstrap no está disponible
+        if (confirm('¿Está seguro que desea cerrar sesión?')) {
             window.location.href = '/logout/';
         }
     }
+    }
+
+    function confirmarLogout() {
+    if (modalLogout) {
+        modalLogout.hide();
+    }
+    window.location.href = '/logout/';
+    }
+
 
     console.log('✅ controlStock.js inicializado (adaptado)');
 })();
@@ -250,7 +270,7 @@ function actualizarPendientes() {
         `;
     }
     
-    fetch('/control-stock/pendientes/', {
+    fetch('/pendientes/', {
         method: 'GET',
         credentials: 'same-origin',
         headers: {
