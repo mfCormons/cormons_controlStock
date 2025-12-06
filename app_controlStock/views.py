@@ -8,94 +8,170 @@ from django.views.decorators.http import require_POST
 
 logger = logging.getLogger(__name__)
 
+def setup_mock(request):
+    """Vista para setear cookies en desarrollo - NO requiere autenticación"""
+    from django.http import HttpResponse
+    
+    html = '''<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Mock Cookies</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; background: #f5f5f5; }
+        .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        button { background: #28a745; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; }
+        button:hover { background: #218838; }
+        .success { background: #d4edda; color: #155724; padding: 15px; border-radius: 4px; margin-top: 20px; display: none; }
+        .info { background: #d1ecf1; color: #0c5460; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+        code { background: #f8f9fa; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Setup Mock Cookies</h1>
+        
+        <div class="info">
+            <strong>⚠️ Instrucciones:</strong><br>
+            1. Inicia el servidor mock: <code>python mock_vfp_server.py</code><br>
+            2. Completa este formulario<br>
+            3. Haz clic en "Setear Cookies"<br>
+            4. Ve a: <code>http://localhost:8000/control-stock/</code>
+        </div>
+
+        <form id="cookieForm">
+            <div class="form-group">
+                <label>Token de Autenticación:</label>
+                <select id="token">
+                    <option value="123abc456def">123abc456def (Juan Pérez)</option>
+                    <option value="test_token">test_token (Admin Test)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>IP del Servidor VFP:</label>
+                <input type="text" id="ip" value="127.0.0.1">
+            </div>
+
+            <div class="form-group">
+                <label>Puerto del Servidor VFP:</label>
+                <input type="number" id="puerto" value="5555">
+            </div>
+
+            <div class="form-group">
+                <label>Nombre de Empresa:</label>
+                <input type="text" id="nombre" value="Empresa Demo S.A.">
+            </div>
+
+            <div class="form-group">
+                <label>Código de Empresa:</label>
+                <input type="text" id="codigo" value="EMP001">
+            </div>
+
+            <button type="submit">🍪 Setear Cookies</button>
+        </form>
+
+        <div class="success" id="successMsg">
+            ✅ Cookies seteadas correctamente!<br>
+            Ahora puedes ir a: <a href="/control-stock/">Control Stock</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('cookieForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const token = document.getElementById('token').value;
+            const ip = document.getElementById('ip').value;
+            const puerto = document.getElementById('puerto').value;
+            const nombre = document.getElementById('nombre').value;
+            const codigo = document.getElementById('codigo').value;
+            
+            const connectionConfig = {
+                ip: ip,
+                puerto: parseInt(puerto),
+                nombre: nombre,
+                codigo: codigo
+            };
+            
+            document.cookie = `authToken=${token}; path=/; max-age=3600`;
+            document.cookie = `connection_config=${encodeURIComponent(JSON.stringify(connectionConfig))}; path=/; max-age=3600`;
+            
+            document.getElementById('successMsg').style.display = 'block';
+            
+            console.log('✅ Cookies seteadas:');
+            console.log('   authToken:', token);
+            console.log('   connection_config:', connectionConfig);
+        });
+    </script>
+</body>
+</html>'''
+    
+    return HttpResponse(html)
 
 def controlStock_view(request):
+    print("==== CONTROL STOCK VIEW INICIANDO ====")
     
-    """
-    Vista principal de la control de stock
-    Flujo:
-    1. Validar cookies
-    2. Verificar token
-    3. Obtener stock pendientes
-    4. Renderizar
-    """
-    logger.debug("==== CONTROL STOCK VIEW ====")
-    
-    # PASO 1: Obtener y validar cookies
-    logger.debug("Obteniendo cookies...")
+    # 1) Cookies
     token, datos_conexion = obtener_datos_cookies(request)
-    logger.debug(f"Token obtenido: {token[:10] if token else 'None'}")
-    logger.debug(f"Datos de conexión: {datos_conexion}")
-    #DESCOMENTAR DESPUES DE HARDCODEAR COOKIES
+    
+    print(f"🔑 Token obtenido: {token}")
+    print(f"📦 Datos conexion: {datos_conexion}")
+    
     if not token or not datos_conexion:
+        print("❌ REDIRIGIENDO - No hay token o datos")
         return redirect('http://login.cormonsapp.com/login/')
-    
-    logger.debug("Cookies válidas.")
-    
-    empresa_nombre = datos_conexion.get('nombre', 'Empresa')
-    
-    # Si es la primera vez que el usuario llega a la URL raíz, debemos
-    # verificar el token y guardar usuario/nombre en session.
-    usuario = request.session.get('usuario')
-    nombre = request.session.get('nombre')
-    if not usuario or not nombre:
-        # Ejecutar verificarToken una sola vez al llegar
-        respuesta_token = comando_verificarToken(token, request)
-        if not respuesta_token:
-            # Token inválido: redirigir al login
-            return redirect('http://login.cormonsapp.com/login/')
-        usuario = respuesta_token.get('usuario', 'A')
-        nombre = respuesta_token.get('nombre', 'Usuario')
-        # Guardar en session para posteriores acciones (actualizar/modal-close)
-        request.session['usuario'] = usuario
-        request.session['nombre'] = nombre
 
-    # PASO 3: Obtener apps disponibles
-    # Obtener pendientes usando el usuario activo de la sesión
-    respuesta_pendientes = comando_controlPendientes(token, request, usrActivo=usuario)
-
-    if not respuesta_pendientes:
-        mensaje = 'Error al obtener stock pendientes'
-        return renderizar_error(request, mensaje, empresa_nombre)
-
-    # Normalizar distintas formas de respuesta desde VFP
-    pendientes = []
-    # Preferir campo 'pendientes' si está presente
-    if isinstance(respuesta_pendientes.get('pendientes'), list) and respuesta_pendientes.get('pendientes'):
-        pendientes = respuesta_pendientes.get('pendientes')
-    # Soportar respuestas con 'PRODUCTOS' (temporal/provisoria)
-    elif isinstance(respuesta_pendientes.get('PRODUCTOS'), list) and respuesta_pendientes.get('PRODUCTOS'):
-        productos = respuesta_pendientes.get('PRODUCTOS')
-        # Mapear cada producto a un dict con claves esperadas por la plantilla
-        pendientes = []
-        for p in productos:
-            pendientes.append({
-                'idSolicitud': p.get('idSolicitud', ''),
-                'codigo': p.get('codigo') or p.get('cod') or '',
-                'descripcion': p.get('descripcion') or p.get('desc') or '',
-                'fecha': p.get('fecha', '')
-            })
-    else:
-        # Fallback: intentar otros campos posibles
-        for key in ('PENDIENTES', 'productos', 'PRODUCTOS'):
-            val = respuesta_pendientes.get(key)
-            if isinstance(val, list) and val:
-                pendientes = val
-                break
+    empresa_nombre = datos_conexion.get('nombre', 'EmpresaDefault')
     
-    # PASO 4: Renderizar éxito
-    # al final de controlStock_view, en lugar de lo actual:
-    context = {
-        'pendientes': pendientes,
-        'empresa_nombre': empresa_nombre,
-        'usuario': usuario,
-        'nombre': nombre,
-        # opcional: pasar datos adicionales devueltos por controlPendientes
-        'deposito': respuesta_pendientes.get('deposito', ''),
-        'cod_deposito': respuesta_pendientes.get('cod_deposito', ''),
-    }
-    return render(request, 'app_controlStock/controlStock.html', context)
+    print(f"✅ Token y datos OK - verificando con VFP...")
     
+    # 2) Verificar token
+    verificarToken = comando_verificarToken(token, request)
+    
+    print(f"📡 Respuesta verificarToken: {verificarToken}")
+
+    if not verificarToken["estado"]:
+        mensaje = verificarToken.get("mensaje", "Token inválido")
+        return renderizar_error(request, mensaje, empresa_nombre)  
+
+    usuario = verificarToken["usuario"]
+    nombre = verificarToken["nombre"]
+
+    request.session['usuario'] = usuario
+    request.session['nombre'] = nombre
+
+    print(f"✅ Usuario verificado: {usuario}")
+
+    # 3) Consultar pendientes
+    respuesta = comando_controlPendientes(token, request, usrActivo=usuario)
+    if not respuesta:
+        return renderizar_error(request, "Error al obtener stock pendientes", empresa_nombre)
+
+    # 4) Normalizar productos
+    pendientes = (
+        respuesta.get("pendientes")
+        or respuesta.get("PRODUCTOS")
+        or respuesta.get("productos")
+        or respuesta.get("PENDIENTES")
+        or []
+    )
+
+    # 5) Render
+    return render(request, "app_controlStock/controlStock.html", {
+        "pendientes": pendientes,
+        "empresa_nombre": empresa_nombre,
+        "usuario": usuario,
+        "nombre": nombre,
+        "deposito": respuesta.get("deposito", ""),
+    })
+
+
 def controlPendientes_view(request):
     """
     Endpoint JSON que verifica token y devuelve la lista de pendientes.

@@ -28,9 +28,9 @@
 
         // Recargar la página al cerrar modal (server re-render traerá nuevos pendientes)
         modalElement.addEventListener('hidden.bs.modal', function() {
-            console.log('🔄 Modal cerrado - Recargando página');
+            console.log('🔄 Modal cerrado - Actualizando pendientes');
             solicitudSeleccionada = null;
-            window.location.reload();
+            actualizarPendientes();
         });
     }
 
@@ -225,3 +225,126 @@
 
     console.log('✅ controlStock.js inicializado (adaptado)');
 })();
+
+function actualizarPendientes() {
+    console.log('🔄 Actualizando pendientes...');
+    
+    const btnActualizar = document.getElementById('btn-actualizar');
+    const container = document.getElementById('solicitudes-container');
+    
+    // Deshabilitar botón y mostrar loading
+    if (btnActualizar) {
+        btnActualizar.disabled = true;
+        btnActualizar.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Actualizando...';
+    }
+    
+    // Mostrar indicador de carga en el contenedor
+    if (container) {
+        container.innerHTML = `
+            <div class="card-body p-4 text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2 mb-0">Actualizando pendientes...</p>
+            </div>
+        `;
+    }
+    
+    fetch('/control-stock/pendientes/', {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(resp => {
+        if (!resp.ok) {
+            throw new Error(`HTTP ${resp.status}`);
+        }
+        return resp.json();
+    })
+    .then(data => {
+        console.log('📡 Pendientes actualizados:', data);
+        
+        if (data.error) {
+            mostrarError(data.error);
+            return;
+        }
+        
+        // Renderizar la tabla con los nuevos pendientes
+        renderizarPendientes(data.pendientes || []);
+    })
+    .catch(err => {
+        console.error('❌ Error al actualizar pendientes:', err);
+        mostrarError('Error al actualizar pendientes. Intente nuevamente.');
+    })
+    .finally(() => {
+        // Restaurar botón
+        if (btnActualizar) {
+            btnActualizar.disabled = false;
+            btnActualizar.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Actualizar';
+        }
+    });
+}
+
+function renderizarPendientes(pendientes) {
+    const container = document.getElementById('solicitudes-container');
+    if (!container) return;
+    
+    if (!pendientes || pendientes.length === 0) {
+        container.innerHTML = `
+            <div class="card-body p-4 text-center">
+                <div class="alert alert-info mb-0">No hay solicitudes pendientes</div>
+            </div>
+        `;
+        return;
+    }
+    
+    // Construir la tabla HTML
+    let html = `
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="fw-semibold">Fecha Solicitud</th>
+                            <th class="fw-semibold">Código</th>
+                            <th class="fw-semibold">Descripción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+    
+    pendientes.forEach(item => {
+        // Manejar diferentes formatos de datos (array o objeto)
+        const id = Array.isArray(item) ? item[0] : (item.idSolicitud || '');
+        const codigo = Array.isArray(item) ? item[1] : (item.codigo || '');
+        const descripcion = Array.isArray(item) ? item[2] : (item.descripcion || '');
+        const fecha = Array.isArray(item) ? item[3] : (item.fecha || '');
+        
+        html += `
+            <tr class="solicitud-row"
+                data-id="${id}"
+                data-cod="${codigo}"
+                data-desc="${descripcion}"
+                data-fecha="${fecha}"
+                onclick="abrirModalControlFromRow(this)">
+                <td>${fecha}</td>
+                <td>${codigo}</td>
+                <td>${descripcion}</td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+// Exponer función globalmente
+window.actualizarPendientes = actualizarPendientes;

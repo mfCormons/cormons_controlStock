@@ -9,53 +9,39 @@ from .__init__ import APP_VERSION
 logger = logging.getLogger(__name__)
 
 def comando_verificarToken(token, request):
-    """
-    Verifica si el token es válido con VFP
-    Returns: dict con datos del usuario si es válido, None si falla
-    """
-    logger.debug("dentro de comando_verificarToken...")
-    
-    # Preparar mensaje
+
     mensaje = {
         "Comando": "verificarToken",
         "Token": token,
         "Vista": "CONTROLSTOCK",
         "Version": APP_VERSION
     }
-    
-    logger.info(f"[CONTROLSTOCK] Verificando token: {token[:10] if token else 'None'}... (Version: {APP_VERSION})")
-    
-    # Enviar consulta TCP
-    respuesta = enviar_consulta_tcp(mensaje, request=request)
-    logger.debug(f"Respuesta recibida: {respuesta}")
 
-    # Validar respuesta: aceptar 'Estado' o 'estado'
-    estado_raw = None
-    if respuesta:
-        estado_raw = respuesta.get("Estado", respuesta.get("estado"))
-    if not respuesta or not estado_raw:
-        mensaje_error = respuesta.get("Mensaje", respuesta.get("mensaje", "Token inválido")) if respuesta else "Error de conexión"
-        logger.warning(f"Token inválido: {mensaje_error}")
-        return None
+    r = enviar_consulta_tcp(mensaje, request=request)
 
-    # Normalizar respuesta: soportar 'T'/'F' o booleanos y claves mayúsc/minúsc
-    if isinstance(estado_raw, bool):
-        estado_bool = estado_raw
-    else:
-        estado_bool = str(estado_raw).upper() in ("T", "TRUE", "1", "OK")
+    # Sin respuesta del servidor
+    if not r:
+        return {
+            "estado": False,
+            "mensaje": "Sin respuesta del servidor"
+        }
 
-    respuesta["estado"] = estado_bool
-    respuesta["mensaje"] = respuesta.get("Mensaje", respuesta.get("mensaje", ""))
-    respuesta["usuario"] = respuesta.get("Usuario", respuesta.get("usuario", ""))
-    respuesta["nombre"] = respuesta.get("Nombre", respuesta.get("nombre", ""))
-    
-    # Validar que el estado sea True
-    if not respuesta.get("estado"):
-        logger.warning(f"Token inválido: {respuesta.get('mensaje', 'Token inválido')}")
-        return None
-    
-    logger.debug(f"Token válido para: {respuesta.get('usuario')} ({respuesta.get('nombre')})")
-    return respuesta
+    # Si viene estado = false, devolver exactamente lo que vino
+    if r.get("estado") is not True:
+        return {
+            "estado": False,
+            "mensaje": r.get("mensaje", "Token inválido")
+        }
+
+    # Token válido → devolver datos completos
+    return {
+        "estado": True,
+        "usuario": r.get("usuario", ""),
+        "nombre":  r.get("nombre", ""),
+        "mensaje": r.get("mensaje", ""),
+        "token":   r.get("token", "")
+    }
+
 
 def comando_controlPendientes(token, request, usrActivo=None):
     """
@@ -82,7 +68,7 @@ def comando_controlPendientes(token, request, usrActivo=None):
     }
     """
     # Usar usrActivo pasado desde la vista (no hardcodear)
-    usr = usrActivo if usrActivo is not None else "A"
+    usr = usrActivo if usrActivo is not None else "no definido"
 
     mensaje = {
         "Comando": "controlPendientes",

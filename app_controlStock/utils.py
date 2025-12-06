@@ -9,19 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 def get_connection_config(request):
-    """
-    Obtiene IP y Puerto desde:
-    1. Sesión (primera prioridad)
-    2. Cookies compartidas (segunda prioridad)
+    from urllib.parse import unquote
     
-    Cuando se obtiene desde cookies, se guarda en sesión para optimización.
-    
-    Args:
-        request: HttpRequest object de Django
-    
-    Returns:
-        tupla: (ip, puerto) o (None, None) si no encuentra
-    """
     # PRIORIDAD 1: Buscar en sesión de Django
     empresa_ip = request.session.get('empresa_ip')
     empresa_puerto = request.session.get('empresa_puerto')
@@ -38,8 +27,11 @@ def get_connection_config(request):
         return None, None
     
     try:
+        # DECODIFICAR URL antes de parsear JSON
+        connection_config_decoded = unquote(connection_config)
+        
         # Decodificar JSON de la cookie
-        datos_conexion = json.loads(connection_config)
+        datos_conexion = json.loads(connection_config_decoded)
         
         # Extraer IP y Puerto
         ip = datos_conexion.get('ip')
@@ -61,7 +53,7 @@ def get_connection_config(request):
         
         logger.debug(f"Configuración encontrada en cookies: {ip}:{puerto}")
         
-        # GUARDAR EN SESIÓN para optimización (importante!)
+        # GUARDAR EN SESIÓN para optimización
         request.session['empresa_ip'] = ip
         request.session['empresa_puerto'] = puerto
         if codigo:
@@ -75,30 +67,29 @@ def get_connection_config(request):
         
     except json.JSONDecodeError as e:
         logger.error(f"Error al decodificar JSON de connection_config: {e}")
+        logger.error(f"Cookie value: {connection_config}")
         return None, None
     except Exception as e:
         logger.error(f"Error inesperado al obtener configuración: {e}")
         return None, None
 
-
 def obtener_datos_cookies(request):
-    """
-    Obtiene y valida cookies necesarias
-    Returns: (token, datos_conexion) o (None, None) si falta algo
-    """
+    from urllib.parse import unquote
+    
     token = request.COOKIES.get('authToken')
-    connection_config = request.COOKIES.get('connection_config')
-    
-    if not token or not connection_config:
-        logger.warning("Faltan cookies necesarias")
+    config = request.COOKIES.get('connection_config')
+
+    if not token or not config:
         return None, None
-    
+
     try:
-        datos_conexion = json.loads(connection_config)
-        logger.debug(f"Cookies encontradas - Token: {token[:10]}...")
-        return token, datos_conexion
-    except json.JSONDecodeError:
-        logger.error("Error al decodificar connection_config")
+        # Decodificar URL encoding antes de parsear JSON
+        config_decoded = unquote(config)
+        return token, json.loads(config_decoded)
+    except json.JSONDecodeError as e:
+        print(f"❌ Error parseando JSON: {e}")
+        print(f"   Config recibido: {config}")
+        print(f"   Config decoded: {config_decoded if 'config_decoded' in locals() else 'N/A'}")
         return None, None
 
 
