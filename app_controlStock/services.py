@@ -147,12 +147,12 @@ def comando_stockControlado(token, request, usrActivo, idSolicitud, cantidad):
 
     """
     mensaje = {
-        "Comando": "StockControlado",
+        "Comando": "RegistrarStockControlado",
         "Token": token,
         "Vista": "CONTROLSTOCK",
         "UsrActivo": usrActivo,
         "idSolicitud": idSolicitud,
-        "cantidad": cantidad
+        "cantidad": int(cantidad)
     }
 
     logger.info(f"[CONTROLSTOCK] Enviando StockControlado idSolicitud={idSolicitud} cantidad={cantidad} usrActivo={usrActivo}")

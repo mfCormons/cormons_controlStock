@@ -7,6 +7,8 @@
     let solicitudSeleccionada = null;
     let modalControl = null;
     let modalLogout = null;
+    let modalConfirmarRegistro = null;
+    let modalAlerta = null;
 
     // Helpers para cookies
     function getCookie(name) {
@@ -27,7 +29,7 @@
     if (modalElement && window.bootstrap) {
         modalControl = new bootstrap.Modal(modalElement);
 
-        // Recargar la página al cerrar modal (server re-render traerá nuevos pendientes)
+        // Actualizar pendientes al cerrar modal
         modalElement.addEventListener('hidden.bs.modal', function() {
             console.log('🔄 Modal cerrado - Actualizando pendientes');
             solicitudSeleccionada = null;
@@ -35,9 +37,21 @@
         });
     }
 
+    // Inicializar modal de confirmación
+    const modalConfirmarElement = document.getElementById('modalConfirmarRegistro');
+    if (modalConfirmarElement && window.bootstrap) {
+        modalConfirmarRegistro = new bootstrap.Modal(modalConfirmarElement);
+    }
+
     const modalLogoutElement = document.getElementById('modalLogout');
     if (modalLogoutElement && window.bootstrap) {
         modalLogout = new bootstrap.Modal(modalLogoutElement);
+    }
+
+    // Inicializar modal de alerta
+    const modalAlertaElement = document.getElementById('modalAlerta');
+    if (modalAlertaElement && window.bootstrap) {
+        modalAlerta = new bootstrap.Modal(modalAlertaElement);
     }
 
     const cantidadInput = document.getElementById('cantidad-contada');
@@ -50,32 +64,75 @@
         });
     }
 
-    // El botón "Actualizar" en la plantilla hace un reload simple (onclick="location.reload()")
-
-    // Exponer funciones globales necesarias
-    window.abrirModalControl = abrirModalControl;
-    window.confirmarControl = confirmarControl;
-    window.cerrarSesion = cerrarSesion;
-    window.confirmarLogout = confirmarLogout;   
-
-    // ====== Lógica principal (simplificada para server-render) ======
-
-    function mostrarSolicitudes(solicitudes) {
-        // En la opción A (server-render) esta función no se usa; queda para compatibilidad.
-        console.log('mostrarSolicitudes llamado (no usado en server-render)');
+    // Función helper para mostrar alertas
+    function mostrarAlerta(mensaje, tipo = 'info') {
+        const header = document.getElementById('modal-alerta-header');
+        const titulo = document.getElementById('modal-alerta-titulo');
+        const icono = document.getElementById('modal-alerta-icono');
+        const mensajeEl = document.getElementById('modal-alerta-mensaje');
+        const btnClose = header ? header.querySelector('.btn-close') : null;
+        
+        // Configurar colores según tipo
+        const configs = {
+            'error': {
+                headerClass: 'bg-danger text-white',
+                titulo: 'Error',
+                icono: 'fa-times-circle text-danger'
+            },
+            'warning': {
+                headerClass: 'bg-warning text-dark',
+                titulo: 'Advertencia',
+                icono: 'fa-exclamation-triangle text-warning'
+            },
+            'success': {
+                headerClass: 'bg-success text-white',
+                titulo: 'Éxito',
+                icono: 'fa-check-circle text-success'
+            },
+            'info': {
+                headerClass: 'bg-primary text-white',
+                titulo: 'Información',
+                icono: 'fa-info-circle text-primary'
+            }
+        };
+        
+        const config = configs[tipo] || configs.info;
+        
+        if (header) {
+            header.className = `modal-header ${config.headerClass}`;
+        }
+        if (titulo) {
+            titulo.innerHTML = `<i class="fas ${config.icono.split(' ')[0]} me-2"></i>${config.titulo}`;
+        }
+        if (icono) {
+            icono.className = `fas ${config.icono}`;
+            icono.style.fontSize = '3rem';
+        }
+        if (mensajeEl) {
+            mensajeEl.textContent = mensaje;
+        }
+        if (btnClose) {
+            btnClose.className = config.headerClass.includes('text-white') ? 'btn-close btn-close-white' : 'btn-close';
+        }
+        
+        if (modalAlerta) {
+            modalAlerta.show();
+        } else {
+            // Fallback
+            alert(mensaje);
+        }
     }
 
     function abrirModalControl(solicitud) {
         console.log('📋 Abriendo modal para:', solicitud);
 
-        // Acepta como 'solicitud' un objeto con keys: idSolicitud, codigo, descripcion, fecha
         solicitudSeleccionada = solicitud || {};
 
         const modalDescripcion = document.getElementById('modal-descripcion');
         const modalCodigo = document.getElementById('modal-codigo');
         const cantidadInputEl = document.getElementById('cantidad-contada');
 
-        const desc = solicitud.descripcion_producto || solicitud.descripcion || solicitud.desc || solicitud.descripcion_producto || solicitud.descripcion || solicitud.description || '';
+        const desc = solicitud.descripcion_producto || solicitud.descripcion || solicitud.desc || '';
         const cod = solicitud.codigo_producto || solicitud.codigo || solicitud.cod || '';
 
         if (modalDescripcion) modalDescripcion.textContent = desc;
@@ -86,11 +143,9 @@
             modalControl.show();
             setTimeout(() => { if (cantidadInputEl) cantidadInputEl.focus(); }, 300);
         } else {
-            alert(`Cargar stock para: ${cod}`);
+            mostrarAlerta(`Cargar stock para: ${cod}`, 'info');
         }
     }
-
-    
 
     // Helper: abrir modal desde una fila que contiene data-* attributes
     window.abrirModalControlFromRow = function(el) {
@@ -106,7 +161,7 @@
 
     function confirmarControl() {
         if (!solicitudSeleccionada) {
-            alert('No hay solicitud seleccionada');
+            mostrarAlerta('No hay solicitud seleccionada', 'warning');
             return;
         }
 
@@ -114,27 +169,56 @@
         const cantidadContada = cantidadEl ? cantidadEl.value.trim() : '';
 
         if (!cantidadContada) {
-            alert('Por favor, ingrese la cantidad contada');
+            mostrarAlerta('Por favor, ingrese la cantidad contada', 'warning');
             if (cantidadEl) cantidadEl.focus();
             return;
         }
         if (isNaN(cantidadContada) || parseFloat(cantidadContada) < 0) {
-            alert('Ingrese un número válido mayor o igual a 0');
+            mostrarAlerta('Ingrese un número válido mayor o igual a 0', 'error');
             if (cantidadEl) cantidadEl.focus();
             return;
         }
 
         const token = obtenerToken();
-        if (!token) {
-            alert('No hay token de autenticación');
+        let tokenLimpio = token;
+        if (tokenLimpio) {
+            tokenLimpio = tokenLimpio.replace(/^["']+|["']+$/g, '');
+            tokenLimpio = tokenLimpio.replace(/\\/g, '');
+            tokenLimpio = tokenLimpio.trim();
+        }
+
+        if (!tokenLimpio) {
+            mostrarAlerta('No hay token de autenticación', 'error');
             return;
         }
 
-        // Confirmación extra antes de enviar
+        // Mostrar modal de confirmación
         const mensajeConfirm = `¿Está seguro que desea registrar ${cantidadContada} unidades para el código ${solicitudSeleccionada.codigo || solicitudSeleccionada.codigo_producto || ''}?`;
-        if (!window.confirm(mensajeConfirm)) return;
+        document.getElementById('confirmar-mensaje').textContent = mensajeConfirm;
+        
+        if (modalConfirmarRegistro) {
+            modalConfirmarRegistro.show();
+        } else {
+            ejecutarRegistro();
+        }
+    }
 
-        // Botón confirmar en modal (si existe)
+    function ejecutarRegistro() {
+        if (modalConfirmarRegistro) {
+            modalConfirmarRegistro.hide();
+        }
+
+        const cantidadEl = document.getElementById('cantidad-contada');
+        const cantidadContada = cantidadEl ? cantidadEl.value.trim() : '';
+        
+        const token = obtenerToken();
+        let tokenLimpio = token;
+        if (tokenLimpio) {
+            tokenLimpio = tokenLimpio.replace(/^["']+|["']+$/g, '');
+            tokenLimpio = tokenLimpio.replace(/\\/g, '');
+            tokenLimpio = tokenLimpio.trim();
+        }
+
         const btnConfirmar = modalElement ? modalElement.querySelector('.btn-success') : null;
         let textoOriginal = null;
         if (btnConfirmar) {
@@ -143,15 +227,13 @@
             btnConfirmar.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Guardando...';
         }
 
-        // Headers (incluimos CSRF si fuera necesario)
         const headers = {
             'Content-Type': 'application/json',
             'X-CSRFToken': getCookie('csrftoken') || ''
         };
 
-        // Body según referencia (ajusta keys según tu backend)
         const body = {
-            token: token,
+            token: tokenLimpio,
             idSolicitud: solicitudSeleccionada.idSolicitud || solicitudSeleccionada[0] || '',
             cantidad: cantidadContada
         };
@@ -168,25 +250,15 @@
         })
         .then(data => {
             console.log('📡 Respuesta registrar:', data);
-            if (data.estado === false && data.mensaje && data.mensaje.toLowerCase().includes('sesion expirada')) {
-                alert('⚠️ Su sesión ha expirado. Será redirigido al login.');
-                localStorage.setItem('requiere_credenciales', 'true');
-                localStorage.setItem('sesion_activa', 'false');
-                window.location.href = '/login/?sesion_expirada=1';
-                return;
-            }
-
+            
             if (data.estado === true || data.estado === 'T') {
                 if (modalControl) {
-                    modalControl.hide(); // El listener 'hidden.bs.modal' recargará la página
-                } else {
-                    // Si no hay bootstrap, recargar manualmente
-                    window.location.reload();
+                    modalControl.hide();
                 }
-                alert('✅ ' + (data.mensaje || 'Control registrado correctamente'));
+                mostrarAlerta(data.mensaje || 'Control registrado correctamente', 'success');
                 solicitudSeleccionada = null;
             } else {
-                alert('❌ ' + (data.mensaje || 'Error al registrar control'));
+                mostrarAlerta(data.mensaje || 'Error al registrar control', 'error');
                 if (btnConfirmar) {
                     btnConfirmar.disabled = false;
                     btnConfirmar.innerHTML = textoOriginal;
@@ -195,7 +267,7 @@
         })
         .catch(err => {
             console.error('❌ Error registrar control:', err);
-            alert('Error al registrar control. Intente nuevamente.');
+            mostrarAlerta('Error al registrar control. Intente nuevamente.', 'error');
             if (btnConfirmar) {
                 btnConfirmar.disabled = false;
                 btnConfirmar.innerHTML = textoOriginal;
@@ -225,23 +297,29 @@
     }
 
     function cerrarSesion() {
-    if (modalLogout) {
-        modalLogout.show();
-    } else {
-        // Fallback si Bootstrap no está disponible
-        if (confirm('¿Está seguro que desea cerrar sesión?')) {
-            window.location.href = '/logout/';
+        if (modalLogout) {
+            modalLogout.show();
+        } else {
+            if (confirm('¿Está seguro que desea cerrar sesión?')) {
+                window.location.href = '/logout/';
+            }
         }
-    }
     }
 
     function confirmarLogout() {
-    if (modalLogout) {
-        modalLogout.hide();
-    }
-    window.location.href = '/logout/';
+        if (modalLogout) {
+            modalLogout.hide();
+        }
+        window.location.href = '/logout/';
     }
 
+    // Exponer funciones globales
+    window.abrirModalControl = abrirModalControl;
+    window.confirmarControl = confirmarControl;
+    window.cerrarSesion = cerrarSesion;
+    window.confirmarLogout = confirmarLogout;
+    window.ejecutarRegistro = ejecutarRegistro;
+    window.mostrarError = mostrarError;
 
     console.log('✅ controlStock.js inicializado (adaptado)');
 })();
@@ -252,13 +330,11 @@ function actualizarPendientes() {
     const btnActualizar = document.getElementById('btn-actualizar');
     const container = document.getElementById('solicitudes-container');
     
-    // Deshabilitar botón y mostrar loading
     if (btnActualizar) {
         btnActualizar.disabled = true;
         btnActualizar.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Actualizando...';
     }
     
-    // Mostrar indicador de carga en el contenedor
     if (container) {
         container.innerHTML = `
             <div class="card-body p-4 text-center">
@@ -291,7 +367,6 @@ function actualizarPendientes() {
             return;
         }
         
-        // Renderizar la tabla con los nuevos pendientes
         renderizarPendientes(data.pendientes || []);
     })
     .catch(err => {
@@ -299,7 +374,6 @@ function actualizarPendientes() {
         mostrarError('Error al actualizar pendientes. Intente nuevamente.');
     })
     .finally(() => {
-        // Restaurar botón
         if (btnActualizar) {
             btnActualizar.disabled = false;
             btnActualizar.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Actualizar';
@@ -320,7 +394,6 @@ function renderizarPendientes(pendientes) {
         return;
     }
     
-    // Construir la tabla HTML
     let html = `
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -336,8 +409,7 @@ function renderizarPendientes(pendientes) {
     `;
     
     pendientes.forEach(item => {
-        // Manejar diferentes formatos de datos (array o objeto)
-        const id = Array.isArray(item) ? item[0] : (item.idSolicitud || '');
+        const id = Array.isArray(item) ? item[0] : (item.idsolicitud || item.idSolicitud || '');
         const codigo = Array.isArray(item) ? item[1] : (item.codigo || '');
         const descripcion = Array.isArray(item) ? item[2] : (item.descripcion || '');
         const fecha = Array.isArray(item) ? item[3] : (item.fecha || '');
@@ -366,5 +438,4 @@ function renderizarPendientes(pendientes) {
     container.innerHTML = html;
 }
 
-// Exponer función globalmente
 window.actualizarPendientes = actualizarPendientes;

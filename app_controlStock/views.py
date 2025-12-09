@@ -5,6 +5,8 @@ from .utils import obtener_datos_cookies, renderizar_error, renderizar_exito
 from .services import comando_verificarToken, comando_controlPendientes, comando_stockControlado
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+import json
+
 
 logger = logging.getLogger(__name__)
 
@@ -211,6 +213,12 @@ def stockControlado_view(request):
         return JsonResponse({"estado": False, "mensaje": "JSON inválido"}, status=400)
 
     token = data.get('token')
+
+    # Limpiar comillas extras del token
+    if token:
+        token = token.strip().strip('"').strip("'")
+        print(f"🔧 Token limpiado: {repr(token)}")
+
     idSolicitud = data.get('idSolicitud')
     cantidad = data.get('cantidad')
     if not token or not idSolicitud or cantidad is None:

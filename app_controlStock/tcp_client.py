@@ -50,9 +50,11 @@ def enviar_consulta_tcp(mensaje_dict, request=None, ip_custom=None, puerto_custo
         if not host or not port:
             return {"estado": False, "mensaje": "No hay cliente configurado"}
 
+    print(f"Conectando a {host}:{port} ...")
+
     try:
         contenido = json.dumps(mensaje_dict, ensure_ascii=False)
-        #contenido = encriptar(contenido)
+        contenido = encriptar(contenido)
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(TCP_TIMEOUT)
@@ -63,11 +65,12 @@ def enviar_consulta_tcp(mensaje_dict, request=None, ip_custom=None, puerto_custo
             if not respuesta:
                 return {'estado': False, 'mensaje': 'No se recibió respuesta'}
 
-            #respuesta = desencriptar(decodificar_respuesta_servidor(respuesta))
-            respuesta = decodificar_respuesta_servidor(respuesta)
+            respuesta = desencriptar(decodificar_respuesta_servidor(respuesta))
+            
             try:
                 return json.loads(respuesta)
             except json.JSONDecodeError:
                 return {"estado": False, "mensaje": "Respuesta inválida"}
     except Exception as e:
+        print("ERROR TCP:", repr(e))
         return {"estado": False, "mensaje": str(e)}
