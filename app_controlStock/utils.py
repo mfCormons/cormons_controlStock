@@ -12,12 +12,16 @@ def get_connection_config(request):
     from urllib.parse import unquote
     
     # PRIORIDAD 1: Buscar en sesión de Django
-    empresa_ip = request.session.get('empresa_ip')
-    empresa_puerto = request.session.get('empresa_puerto')
+    #empresa_ip = request.session.get('empresa_ip')
+    #empresa_puerto = request.session.get('empresa_puerto')
+
+    # No permitir localhost si la cookie trae otra IP
+    #if empresa_ip and empresa_puerto and empresa_ip != "127.0.0.1":
+        #return empresa_ip, empresa_puerto
     
-    if empresa_ip and empresa_puerto:
-        logger.debug(f"Configuración encontrada en sesión: {empresa_ip}:{empresa_puerto}")
-        return empresa_ip, empresa_puerto
+    #if empresa_ip and empresa_puerto:
+        #logger.debug(f"Configuración encontrada en sesión: {empresa_ip}:{empresa_puerto}")
+        #return empresa_ip, empresa_puerto
     
     # PRIORIDAD 2: Buscar en cookies
     connection_config = request.COOKIES.get('connection_config')
