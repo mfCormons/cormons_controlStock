@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 import logging
 from django.http import JsonResponse
+from compartidos.cookies_utils import sincronizar_conexion_a_sesion
 from .utils import obtener_datos_cookies, renderizar_error, renderizar_exito
 from .services import comando_verificarToken, comando_controlPendientes, comando_stockControlado
 from django.views.decorators.csrf import csrf_exempt
@@ -233,18 +234,21 @@ def stockControlado_view(request):
 
 def logout_view(request):
     """
-    Cierra sesión: limpia sesión y cookies, luego redirige al login
+    Cierra sesión del usuario actual: limpia sesión y cookies de usuario,
+    pero mantiene token y datos de empresa para permitir cambio de usuario
     """
     logger.debug("==== LOGOUT VIEW CONTROL STOCK ====")
-    
-    # Limpiar sesión de Django
+
+    # Limpiar sesión de Django (usuario, nombre, empresa_ip, empresa_puerto, etc.)
     request.session.flush()
-    
-    # Preparar respuesta de redirección
-    response = redirect('http://login.cormonsapp.com/logout/')
-    
-    # Eliminar cookies de autenticación
-    response.delete_cookie('authToken')
-    response.delete_cookie('connection_config')
-    
+
+    # Redirigir a la landing page (detectará falta de usuario y redirigirá al login)
+    response = redirect('http://landing.cormons.ar/')
+
+    # Borrar SOLO cookies de usuario (mantiene authToken y connection_config)
+    response.delete_cookie('user_nombre', domain='.cormons.app')
+    response.delete_cookie('user_usuario', domain='.cormons.app')
+
+    logger.debug("Cookies de usuario borradas, token y empresa mantenidos")
+
     return response
