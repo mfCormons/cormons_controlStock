@@ -97,14 +97,20 @@ def obtener_datos_cookies(request):
         return None, None
 
 
-def renderizar_error(request, mensaje, empresa_nombre):
+def renderizar_error(request, mensaje, empresa_nombre, redirect_to=None, redirect_delay=5):
     """
     Renderiza página con mensaje de error
+
+    Args:
+        redirect_to: URL a la que redirigir después del delay (opcional)
+        redirect_delay: Segundos antes de redirigir (default: 5)
     """
     context = {
         'error': True,
         'mensaje': mensaje,
-        'empresa_nombre': empresa_nombre
+        'empresa_nombre': empresa_nombre,
+        'redirect_to': redirect_to,
+        'redirect_delay': redirect_delay
     }
     return render(request, 'app_controlStock/controlStock.html', context)
 

@@ -245,12 +245,29 @@
             credentials: 'same-origin'
         })
         .then(resp => {
+            // Si es 401, parsear el JSON para obtener el redirect
+            if (resp.status === 401) {
+                return resp.json().then(data => {
+                    console.log('🚫 Sesión inválida - mostrando modal de error');
+                    const redirectUrl = data.redirect || 'http://login.cormonsapp.com/login/';
+                    const mensaje = data.error || 'Su sesión ha expirado o no es válida';
+
+                    // Cerrar modal de control si está abierto
+                    if (modalControl) {
+                        modalControl.hide();
+                    }
+
+                    // Mostrar modal de error bloqueante
+                    window.mostrarErrorConRedirect(mensaje, redirectUrl, 5);
+                    throw new Error('Sesión inválida');
+                });
+            }
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             return resp.json();
         })
         .then(data => {
             console.log('📡 Respuesta registrar:', data);
-            
+
             if (data.estado === true || data.estado === 'T') {
                 if (modalControl) {
                     modalControl.hide();
@@ -267,8 +284,11 @@
         })
         .catch(err => {
             console.error('❌ Error registrar control:', err);
-            mostrarAlerta('Error al registrar control. Intente nuevamente.', 'error');
-            if (btnConfirmar) {
+            // No mostrar alerta si ya estamos redirigiendo
+            if (err.message !== 'Sesión inválida') {
+                mostrarAlerta('Error al registrar control. Intente nuevamente.', 'error');
+            }
+            if (btnConfirmar && err.message !== 'Sesión inválida') {
                 btnConfirmar.disabled = false;
                 btnConfirmar.innerHTML = textoOriginal;
             }
@@ -313,6 +333,52 @@
         window.location.href = '/logout/';
     }
 
+    // Función para mostrar modal de error con redirección (bloquea interacción)
+    function mostrarErrorConRedirect(mensaje, redirectUrl, delay = 5) {
+        const modalElement = document.getElementById('modalErrorRedirect');
+        const mensajeEl = document.getElementById('modal-error-mensaje');
+        const countdownEl = document.getElementById('modal-countdown');
+        const btnRedirect = document.getElementById('btn-redirect-now');
+
+        if (!modalElement || !window.bootstrap) {
+            // Fallback si no existe el modal
+            alert(mensaje);
+            window.location.href = redirectUrl;
+            return;
+        }
+
+        // Configurar mensaje
+        if (mensajeEl) mensajeEl.textContent = mensaje;
+        if (countdownEl) countdownEl.textContent = delay;
+
+        // Crear modal con opciones de bloqueo
+        const modal = new bootstrap.Modal(modalElement, {
+            backdrop: 'static',
+            keyboard: false
+        });
+
+        // Countdown
+        let segundos = delay;
+        const interval = setInterval(() => {
+            segundos--;
+            if (countdownEl) countdownEl.textContent = segundos;
+            if (segundos <= 0) {
+                clearInterval(interval);
+                window.location.href = redirectUrl;
+            }
+        }, 1000);
+
+        // Botón para ir inmediatamente
+        if (btnRedirect) {
+            btnRedirect.onclick = function() {
+                clearInterval(interval);
+                window.location.href = redirectUrl;
+            };
+        }
+
+        modal.show();
+    }
+
     // Exponer funciones globales
     window.abrirModalControl = abrirModalControl;
     window.confirmarControl = confirmarControl;
@@ -320,6 +386,7 @@
     window.confirmarLogout = confirmarLogout;
     window.ejecutarRegistro = ejecutarRegistro;
     window.mostrarError = mostrarError;
+    window.mostrarErrorConRedirect = mostrarErrorConRedirect;
 
     console.log('✅ controlStock.js inicializado (adaptado)');
 })();
@@ -354,6 +421,18 @@ function actualizarPendientes() {
         }
     })
     .then(resp => {
+        // Si es 401, parsear el JSON para obtener el redirect
+        if (resp.status === 401) {
+            return resp.json().then(data => {
+                console.log('🚫 Sesión inválida - mostrando modal de error');
+                const redirectUrl = data.redirect || 'http://login.cormonsapp.com/login/';
+                const mensaje = data.error || 'Su sesión ha expirado o no es válida';
+
+                // Mostrar modal de error bloqueante
+                window.mostrarErrorConRedirect(mensaje, redirectUrl, 5);
+                throw new Error('Sesión inválida');
+            });
+        }
         if (!resp.ok) {
             throw new Error(`HTTP ${resp.status}`);
         }
@@ -361,17 +440,20 @@ function actualizarPendientes() {
     })
     .then(data => {
         console.log('📡 Pendientes actualizados:', data);
-        
+
         if (data.error) {
             mostrarError(data.error);
             return;
         }
-        
+
         renderizarPendientes(data.pendientes || []);
     })
     .catch(err => {
         console.error('❌ Error al actualizar pendientes:', err);
-        mostrarError('Error al actualizar pendientes. Intente nuevamente.');
+        // No mostrar error si ya estamos redirigiendo
+        if (err.message !== 'Sesión inválida') {
+            mostrarError('Error al actualizar pendientes. Intente nuevamente.');
+        }
     })
     .finally(() => {
         if (btnActualizar) {

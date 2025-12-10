@@ -141,7 +141,10 @@ def controlStock_view(request):
 
     if not verificarToken["estado"]:
         mensaje = verificarToken.get("mensaje", "Token inválido")
-        return renderizar_error(request, mensaje, empresa_nombre)  
+        # Limpiar sesión
+        request.session.flush()
+        # Mostrar error y redirigir después de 5 segundos
+        return renderizar_error(request, mensaje, empresa_nombre, redirect_to='http://login.cormonsapp.com/login/', redirect_delay=5)  
 
     usuario = verificarToken["usuario"]
     nombre = verificarToken["nombre"]
@@ -159,7 +162,10 @@ def controlStock_view(request):
     # Verificar si VFP respondió con error
     if respuesta.get("estado") is False:
         mensaje = respuesta.get("mensaje", "Error al obtener stock pendientes")
-        return renderizar_error(request, mensaje, empresa_nombre)
+        # Limpiar sesión
+        request.session.flush()
+        # Mostrar error y redirigir después de 5 segundos
+        return renderizar_error(request, mensaje, empresa_nombre, redirect_to='http://login.cormonsapp.com/login/', redirect_delay=5)
 
     # 4) Normalizar productos
     pendientes = (
@@ -201,10 +207,15 @@ def controlPendientes_view(request):
     if not respuesta_pendientes:
         return JsonResponse({"error": "Error al obtener pendientes"}, status=500)
 
-    # Verificar si VFP respondió con error
+    # Verificar si VFP respondió con error (token inválido, versión incorrecta, etc.)
     if respuesta_pendientes.get("estado") is False:
-        mensaje = respuesta_pendientes.get("mensaje", "Error al obtener pendientes")
-        return JsonResponse({"error": mensaje}, status=400)
+        # Limpiar sesión
+        request.session.flush()
+        # Retornar 401 para que el frontend redirija al login
+        return JsonResponse({
+            "error": "Sesión inválida",
+            "redirect": "http://login.cormonsapp.com/login/"
+        }, status=401)
 
     pendientes = respuesta_pendientes.get("pendientes", [])
     return JsonResponse({"pendientes": pendientes}, status=200)
@@ -243,6 +254,16 @@ def stockControlado_view(request):
 
     estado = respuesta.get('estado', False)
     mensaje = respuesta.get('mensaje', '')
+
+    # Verificar si VFP respondió con error (token inválido, versión incorrecta, etc.)
+    if estado is False:
+        # Limpiar sesión
+        request.session.flush()
+        # Retornar 401 para que el frontend redirija al login
+        return JsonResponse({
+            "error": mensaje or "Error al registrar control",
+            "redirect": "http://login.cormonsapp.com/login/"
+        }, status=401)
 
     # Si es exitoso pero no hay mensaje, usar mensaje por defecto
     if estado and not mensaje:

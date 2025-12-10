@@ -1,8 +1,36 @@
 <div class="card-body p-0">
   {% if error %}
-    <div class="card-body p-4 text-center">
-      <div class="alert alert-danger mb-0" style="white-space: pre-line;">{{ mensaje }}</div>
-    </div>
+    {% if redirect_to %}
+      <!-- Usar modal bloqueante para errores con redirección -->
+      <div id="redirect-config" data-url="{{ redirect_to }}" data-delay="{{ redirect_delay }}" data-mensaje="{{ mensaje }}" style="display: none;"></div>
+      <script>
+        (function() {
+          const config = document.getElementById('redirect-config');
+          if (!config) return;
+
+          const mensaje = config.dataset.mensaje || 'Error al cargar la aplicación';
+          const redirectUrl = config.dataset.url;
+          const delay = parseInt(config.dataset.delay) || 5;
+
+          // Esperar a que el DOM esté completamente cargado
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+              window.mostrarErrorConRedirect(mensaje, redirectUrl, delay);
+            });
+          } else {
+            // DOM ya está listo
+            window.mostrarErrorConRedirect(mensaje, redirectUrl, delay);
+          }
+        })();
+      </script>
+    {% else %}
+      <!-- Error sin redirección: mostrar en la página -->
+      <div class="card-body p-4 text-center">
+        <div class="alert alert-danger mb-0" style="white-space: pre-line;">
+          {{ mensaje }}
+        </div>
+      </div>
+    {% endif %}
   {% elif pendientes and pendientes|length > 0 %}
     <div class="table-responsive">
       <table class="table table-hover mb-0">

@@ -254,6 +254,32 @@
         </div>
     </div>
 
+    <!-- Modal de Error con Redirección (NO SE PUEDE CERRAR) -->
+    <div class="modal fade" id="modalErrorRedirect" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-danger" style="border-width: 3px;">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title w-100 text-center">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Sesión Inválida
+                    </h5>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <i class="fas fa-times-circle text-danger" style="font-size: 4rem;"></i>
+                    <p class="mt-3 mb-2 fs-5 fw-bold" id="modal-error-mensaje" style="white-space: pre-line;"></p>
+                    <hr class="my-3">
+                    <p class="mb-0 text-muted">
+                        <i class="fas fa-arrow-right me-2"></i>Redirigiendo al login en <span id="modal-countdown" class="fw-bold text-danger">5</span> segundos...
+                    </p>
+                </div>
+                <div class="modal-footer justify-content-center bg-light">
+                    <button type="button" class="btn btn-danger" id="btn-redirect-now">
+                        <i class="fas fa-sign-out-alt me-1"></i>Ir al Login Ahora
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Cargar el script principal -->
     <script src="{% static 'js/controlStock.js' %}"></script>
     <script>
