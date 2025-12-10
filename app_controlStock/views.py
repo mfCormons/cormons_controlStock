@@ -128,7 +128,7 @@ def controlStock_view(request):
     
     if not token or not datos_conexion:
         print("❌ REDIRIGIENDO - No hay token o datos")
-        return redirect('http://login.cormonsapp.com/login/')
+        return redirect('https://login.cormons.app/')
 
     empresa_nombre = datos_conexion.get('nombre', 'EmpresaDefault')
     
@@ -144,7 +144,7 @@ def controlStock_view(request):
         # Limpiar sesión
         request.session.flush()
         # Mostrar error y redirigir después de 5 segundos
-        return renderizar_error(request, mensaje, empresa_nombre, redirect_to='http://login.cormonsapp.com/login/', redirect_delay=5)  
+        return renderizar_error(request, mensaje, empresa_nombre, redirect_to='https://login.cormons.app/', redirect_delay=5)  
 
     usuario = verificarToken["usuario"]
     nombre = verificarToken["nombre"]
@@ -165,7 +165,7 @@ def controlStock_view(request):
         # Limpiar sesión
         request.session.flush()
         # Mostrar error y redirigir después de 5 segundos
-        return renderizar_error(request, mensaje, empresa_nombre, redirect_to='http://login.cormonsapp.com/login/', redirect_delay=5)
+        return renderizar_error(request, mensaje, empresa_nombre, redirect_to='https://login.cormons.app/', redirect_delay=5)
 
     # 4) Normalizar productos
     pendientes = (
@@ -214,7 +214,7 @@ def controlPendientes_view(request):
         # Retornar 401 para que el frontend redirija al login
         return JsonResponse({
             "error": "Sesión inválida",
-            "redirect": "http://login.cormonsapp.com/login/"
+            "redirect": "https://login.cormons.app/"
         }, status=401)
 
     pendientes = respuesta_pendientes.get("pendientes", [])
@@ -262,7 +262,7 @@ def stockControlado_view(request):
         # Retornar 401 para que el frontend redirija al login
         return JsonResponse({
             "error": mensaje or "Error al registrar control",
-            "redirect": "http://login.cormonsapp.com/login/"
+            "redirect": "https://login.cormons.app/"
         }, status=401)
 
     # Si es exitoso pero no hay mensaje, usar mensaje por defecto

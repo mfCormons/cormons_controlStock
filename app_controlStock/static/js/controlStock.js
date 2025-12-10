@@ -249,7 +249,7 @@
             if (resp.status === 401) {
                 return resp.json().then(data => {
                     console.log('🚫 Sesión inválida - mostrando modal de error');
-                    const redirectUrl = data.redirect || 'http://login.cormonsapp.com/login/';
+                    const redirectUrl = data.redirect || 'https://login.cormons.app/';
                     const mensaje = data.error || 'Su sesión ha expirado o no es válida';
 
                     // Cerrar modal de control si está abierto
@@ -425,7 +425,7 @@ function actualizarPendientes() {
         if (resp.status === 401) {
             return resp.json().then(data => {
                 console.log('🚫 Sesión inválida - mostrando modal de error');
-                const redirectUrl = data.redirect || 'http://login.cormonsapp.com/login/';
+                const redirectUrl = data.redirect || 'https://login.cormons.app/';
                 const mensaje = data.error || 'Su sesión ha expirado o no es válida';
 
                 // Mostrar modal de error bloqueante
