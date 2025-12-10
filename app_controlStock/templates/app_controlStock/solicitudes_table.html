@@ -1,5 +1,9 @@
 <div class="card-body p-0">
-  {% if pendientes and pendientes|length > 0 %}
+  {% if error %}
+    <div class="card-body p-4 text-center">
+      <div class="alert alert-danger mb-0" style="white-space: pre-line;">{{ mensaje }}</div>
+    </div>
+  {% elif pendientes and pendientes|length > 0 %}
     <div class="table-responsive">
       <table class="table table-hover mb-0">
         <thead class="bg-light">

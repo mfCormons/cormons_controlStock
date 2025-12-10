@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 import json
 
+
 logger = logging.getLogger(__name__)
 
 def setup_mock(request):
@@ -155,6 +156,11 @@ def controlStock_view(request):
     if not respuesta:
         return renderizar_error(request, "Error al obtener stock pendientes", empresa_nombre)
 
+    # Verificar si VFP respondió con error
+    if respuesta.get("estado") is False:
+        mensaje = respuesta.get("mensaje", "Error al obtener stock pendientes")
+        return renderizar_error(request, mensaje, empresa_nombre)
+
     # 4) Normalizar productos
     pendientes = (
         respuesta.get("pendientes")
@@ -194,6 +200,11 @@ def controlPendientes_view(request):
     respuesta_pendientes = comando_controlPendientes(token, request, usrActivo=usuario)
     if not respuesta_pendientes:
         return JsonResponse({"error": "Error al obtener pendientes"}, status=500)
+
+    # Verificar si VFP respondió con error
+    if respuesta_pendientes.get("estado") is False:
+        mensaje = respuesta_pendientes.get("mensaje", "Error al obtener pendientes")
+        return JsonResponse({"error": mensaje}, status=400)
 
     pendientes = respuesta_pendientes.get("pendientes", [])
     return JsonResponse({"pendientes": pendientes}, status=200)

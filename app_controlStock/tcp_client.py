@@ -65,11 +65,15 @@ def enviar_consulta_tcp(mensaje_dict, request=None, ip_custom=None, puerto_custo
             if not respuesta:
                 return {'estado': False, 'mensaje': 'No se recibió respuesta'}
 
-            respuesta = desencriptar(decodificar_respuesta_servidor(respuesta))
-            
+            # CRÍTICO: Convertir bytes a string con latin-1, desencriptar, luego decodificar JSON
+            respuesta_str_encriptada = respuesta.decode('latin-1')
+            respuesta_desencriptada = desencriptar(respuesta_str_encriptada)
+
             try:
-                return json.loads(respuesta)
-            except json.JSONDecodeError:
+                return json.loads(respuesta_desencriptada)
+            except json.JSONDecodeError as e:
+                logger.error(f"Error parseando JSON: {e}")
+                logger.error(f"Respuesta recibida: {repr(respuesta_desencriptada[:200])}")
                 return {"estado": False, "mensaje": "Respuesta inválida"}
     except Exception as e:
         print("ERROR TCP:", repr(e))

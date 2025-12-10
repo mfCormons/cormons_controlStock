@@ -20,13 +20,17 @@ def encriptar(texto):
 
 def desencriptar(texto_enc):
     """Desencripta tomando la clave del último caracter."""
+    # Si es bytes, convertir a string primero
+    if isinstance(texto_enc, bytes):
+        texto_enc = texto_enc.decode('latin-1')
+
     clave = ord(texto_enc[-1])
     texto_real = texto_enc[:-1]
-    
+
     resultado = []
     for c in texto_real:
         codigo = (ord(c) - clave) % 256
         resultado.append(chr(codigo))
-    
+
     return "".join(resultado)
 
