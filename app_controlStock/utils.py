@@ -10,72 +10,58 @@ logger = logging.getLogger(__name__)
 
 def get_connection_config(request):
     from urllib.parse import unquote
-    
-    # PRIORIDAD 1: Buscar en sesión de Django
-    #empresa_ip = request.session.get('empresa_ip')
-    #empresa_puerto = request.session.get('empresa_puerto')
 
-    # No permitir localhost si la cookie trae otra IP
-    #if empresa_ip and empresa_puerto and empresa_ip != "127.0.0.1":
-        #return empresa_ip, empresa_puerto
-    
-    #if empresa_ip and empresa_puerto:
-        #logger.debug(f"Configuración encontrada en sesión: {empresa_ip}:{empresa_puerto}")
-        #return empresa_ip, empresa_puerto
-    
-    # PRIORIDAD 2: Buscar en cookies
+    # Intentar obtener connection_config (JSON)
     connection_config = request.COOKIES.get('connection_config')
-    
-    if not connection_config:
-        logger.warning("No se encontró cookie 'connection_config'")
-        return None, None
-    
-    try:
-        # DECODIFICAR URL antes de parsear JSON
-        connection_config_decoded = unquote(connection_config)
-        
-        # Decodificar JSON de la cookie
-        datos_conexion = json.loads(connection_config_decoded)
-        
-        # Extraer IP y Puerto
-        ip = datos_conexion.get('ip')
-        puerto = datos_conexion.get('puerto')
-        codigo = datos_conexion.get('codigo', '')
-        nombre = datos_conexion.get('nombre', '')
-        
-        # Validar que ambos valores existan y no sean vacíos
-        if not ip or not puerto:
-            logger.warning(f"IP o Puerto faltantes en connection_config. IP: {ip}, Puerto: {puerto}")
-            return None, None
-        
-        # Convertir puerto a entero si es string
+    ip = None
+    puerto = None
+
+    if connection_config:
         try:
-            puerto = int(puerto) if isinstance(puerto, str) else puerto
-        except (ValueError, TypeError):
-            logger.error(f"Puerto inválido: {puerto}")
+            # DECODIFICAR URL antes de parsear JSON
+            connection_config_decoded = unquote(connection_config)
+
+            # Decodificar JSON de la cookie
+            datos_conexion = json.loads(connection_config_decoded)
+
+            # Extraer IP y Puerto
+            ip = datos_conexion.get('ip')
+            puerto = datos_conexion.get('puerto')
+            codigo = datos_conexion.get('codigo', '')
+            nombre = datos_conexion.get('nombre', '')
+
+            if ip and puerto:
+                logger.debug(f"Configuración encontrada en connection_config (JSON): {ip}:{puerto}")
+        except json.JSONDecodeError as e:
+            logger.error(f"Error al decodificar JSON de connection_config: {e}")
+            logger.error(f"Cookie value: {connection_config}")
+
+    # Si no hay connection_config o falló, intentar cookies individuales
+    if not ip or not puerto:
+        empresa_ip = request.COOKIES.get('empresa_ip')
+        empresa_puerto = request.COOKIES.get('empresa_puerto')
+
+        if empresa_ip and empresa_puerto:
+            ip = empresa_ip
+            puerto = empresa_puerto
+            logger.debug(f"Configuración encontrada en cookies individuales: {ip}:{puerto}")
+        else:
+            logger.warning("No se encontró connection_config ni cookies individuales (empresa_ip, empresa_puerto)")
             return None, None
-        
-        logger.debug(f"Configuración encontrada en cookies: {ip}:{puerto}")
-        
-        # GUARDAR EN SESIÓN para optimización
-        request.session['empresa_ip'] = ip
-        request.session['empresa_puerto'] = puerto
-        if codigo:
-            request.session['empresa_codigo'] = codigo
-        if nombre:
-            request.session['empresa_nombre'] = nombre
-        
-        logger.debug("Configuración guardada en sesión para futuras consultas")
-        
-        return ip, puerto
-        
-    except json.JSONDecodeError as e:
-        logger.error(f"Error al decodificar JSON de connection_config: {e}")
-        logger.error(f"Cookie value: {connection_config}")
+
+    # Validar que ambos valores existan y no sean vacíos
+    if not ip or not puerto:
+        logger.warning(f"IP o Puerto faltantes. IP: {ip}, Puerto: {puerto}")
         return None, None
-    except Exception as e:
-        logger.error(f"Error inesperado al obtener configuración: {e}")
+
+    # Convertir puerto a entero si es string
+    try:
+        puerto = int(puerto) if isinstance(puerto, str) else puerto
+    except (ValueError, TypeError):
+        logger.error(f"Puerto inválido: {puerto}")
         return None, None
+
+    return ip, puerto
 
 def obtener_datos_cookies(request):
     from urllib.parse import unquote
@@ -84,21 +70,45 @@ def obtener_datos_cookies(request):
     config = request.COOKIES.get('connection_config')
     usuario = request.COOKIES.get('user_usuario')
 
-    if not token or not config:
+    if not token:
         return None, None, None
 
-    if not usuario or usuario.strip() == '':
-        return None, None, None
+    # Intentar obtener datos de conexión desde connection_config (JSON)
+    datos_conexion = None
+    if config:
+        try:
+            # Decodificar URL encoding antes de parsear JSON
+            config_decoded = unquote(config)
+            datos_conexion = json.loads(config_decoded)
+            print(f"✅ Usando connection_config (JSON)")
+        except json.JSONDecodeError as e:
+            print(f"❌ Error parseando connection_config JSON: {e}")
+            print(f"   Config recibido: {config}")
 
-    try:
-        # Decodificar URL encoding antes de parsear JSON
-        config_decoded = unquote(config)
-        return token, json.loads(config_decoded), usuario
-    except json.JSONDecodeError as e:
-        print(f"❌ Error parseando JSON: {e}")
-        print(f"   Config recibido: {config}")
-        print(f"   Config decoded: {config_decoded if 'config_decoded' in locals() else 'N/A'}")
-        return None, None, None
+    # Si no hay connection_config o falló el parsing, intentar cookies individuales
+    if not datos_conexion:
+        empresa_ip = request.COOKIES.get('empresa_ip')
+        empresa_puerto = request.COOKIES.get('empresa_puerto')
+        empresa_nombre = request.COOKIES.get('empresa_nombre')
+        empresa_codigo = request.COOKIES.get('empresa_codigo')
+
+        if empresa_ip and empresa_puerto:
+            try:
+                datos_conexion = {
+                    'ip': empresa_ip,
+                    'puerto': int(empresa_puerto),
+                    'nombre': unquote(empresa_nombre) if empresa_nombre else '',
+                    'codigo': empresa_codigo if empresa_codigo else ''
+                }
+                print(f"✅ Usando cookies individuales (empresa_ip, empresa_puerto, etc.)")
+            except (ValueError, TypeError) as e:
+                print(f"❌ Error convirtiendo datos de cookies individuales: {e}")
+                return None, None, None
+        else:
+            print(f"❌ No se encontró connection_config ni cookies individuales válidas")
+            return None, None, None
+
+    return token, datos_conexion, usuario
 
 
 def renderizar_error(request, mensaje, empresa_nombre='', redirect_to=None, redirect_delay=5):

@@ -52,7 +52,7 @@ def setup_mock(request):
             2. Marca las cookies que quieres setear<br>
             3. Completa los campos habilitados<br>
             4. Haz clic en "Setear Cookies"<br>
-            5. Ve a: <code>http://localhost:8000/control-stock/</code>
+            5. Ve a: <code>http://localhost:8000/</code>
         </div>
 
         <form id="cookieForm">
@@ -120,7 +120,7 @@ def setup_mock(request):
 
         <div class="success" id="successMsg">
             ✅ Cookies seteadas correctamente!<br>
-            Ahora puedes ir a: <a href="/control-stock/">Control Stock</a>
+            Ahora puedes ir a: <a href="/">Control Stock</a>
         </div>
 
         <div class="warning">
@@ -199,8 +199,13 @@ def setup_mock(request):
                     codigo: codigo
                 };
 
+                // Setear ambos formatos: JSON y cookies individuales
                 document.cookie = `connection_config=${encodeURIComponent(JSON.stringify(connectionConfig))}; path=/; max-age=3600`;
-                console.log('✅ connection_config seteado:', connectionConfig);
+                document.cookie = `empresa_ip=${ip}; path=/; max-age=3600`;
+                document.cookie = `empresa_puerto=${puerto}; path=/; max-age=3600`;
+                document.cookie = `empresa_nombre=${encodeURIComponent(nombre)}; path=/; max-age=3600`;
+                document.cookie = `empresa_codigo=${codigo}; path=/; max-age=3600`;
+                console.log('✅ connection_config seteado (JSON + cookies individuales):', connectionConfig);
             }
 
             document.getElementById('successMsg').style.display = 'block';
@@ -212,7 +217,7 @@ def setup_mock(request):
         });
 
         function clearAllCookies() {
-            const cookies = ['authToken', 'user_usuario', 'user_nombre', 'connection_config'];
+            const cookies = ['authToken', 'user_usuario', 'user_nombre', 'connection_config', 'empresa_ip', 'empresa_puerto', 'empresa_nombre', 'empresa_codigo'];
             cookies.forEach(cookie => {
                 document.cookie = `${cookie}=; path=/; max-age=0`;
             });
@@ -278,12 +283,12 @@ def controlStock_view(request):
         )
 
     empresa_nombre = datos_conexion.get('nombre', 'EmpresaDefault')
-    
+
     print(f"✅ Token y datos OK - verificando con VFP...")
-    
+
     # 2) Verificar token
     verificarToken = comando_verificarToken(token, request)
-    
+
     print(f"📡 Respuesta verificarToken: {verificarToken}")
 
     if not verificarToken["estado"]:
@@ -291,7 +296,7 @@ def controlStock_view(request):
         # Limpiar sesión
         request.session.flush()
         # Mostrar error y redirigir después de 5 segundos
-        return renderizar_error(request, mensaje, empresa_nombre, redirect_to='https://login.cormons.app/', redirect_delay=5)  
+        return renderizar_error(request, mensaje, empresa_nombre, redirect_to='https://login.cormons.app/', redirect_delay=5)
 
     usuario = verificarToken["usuario"]
     nombre = verificarToken["nombre"]
