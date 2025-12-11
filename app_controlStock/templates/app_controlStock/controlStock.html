@@ -42,17 +42,29 @@
         <header class="navbar fixed-top bg-white shadow-sm">
             <div class="container-fluid d-flex justify-content-between align-items-center flex-nowrap">
                 <div class="navbar-brand text-success fw-bold text-center flex-grow-1" style="min-width: 0;">
-                    <!-- Línea 1: Nombre de empresa y usuario -->
-                    <p id="empresa-usuario-header" class="mb-0 text-truncate" style="font-size: 0.85rem;">
-                        <span id="empresa-nombre-header" class="d-inline-block text-truncate" style="max-width: 150px; vertical-align: bottom;">{{ empresa_nombre|default:"Empresa" }}</span>
-                        <span class="d-none d-md-inline">[</span><span id="usuario-display" class="d-none d-md-inline">{{ usuario|default:"Usuario" }}</span><span class="d-none d-md-inline">],</span>
-                        <span id="nombre-display" class="d-none d-sm-inline">{{ nombre|default:"Nombre" }}</span>
-                    </p>
-                    <!-- Línea 2: Depósito -->
-                    <p class="mb-0 text-muted" style="font-size: 0.75rem;">
-                        <i class="fas fa-warehouse me-1"></i>
-                        <span id="deposito-info">{{ deposito|default:"Depósito no asignado" }}</span>
-                    </p>
+                    <!-- VERSIÓN MÓVIL: 3 líneas -->
+                    <div class="d-md-none">
+                        <p class="mb-0" style="font-size: 0.8rem;">
+                            <span id="empresa-nombre-header" class="text-truncate d-inline-block" style="max-width: 200px; vertical-align: bottom;">{{ empresa_nombre|default:"Empresa" }}</span>
+                        </p>
+                        <p class="mb-0" style="font-size: 0.75rem;">
+                            [<span id="usuario-display">{{ usuario|default:"Usuario" }}</span>] <span id="nombre-display">{{ nombre|default:"Nombre" }}</span>
+                        </p>
+                        <p class="mb-0 text-muted" style="font-size: 0.7rem;">
+                            <i class="fas fa-warehouse me-1"></i><span id="deposito-info">{{ deposito|default:"Depósito" }}</span>
+                        </p>
+                    </div>
+
+                    <!-- VERSIÓN DESKTOP: 2 líneas -->
+                    <div class="d-none d-md-block">
+                        <p class="mb-0 text-truncate" style="font-size: 0.85rem;">
+                            <span id="empresa-nombre-header-desktop" class="d-inline-block text-truncate" style="max-width: 150px; vertical-align: bottom;">{{ empresa_nombre|default:"Empresa" }}</span>
+                            [<span id="usuario-display-desktop">{{ usuario|default:"Usuario" }}</span>], <span id="nombre-display-desktop">{{ nombre|default:"Nombre" }}</span>
+                        </p>
+                        <p class="mb-0 text-muted" style="font-size: 0.75rem;">
+                            <i class="fas fa-warehouse me-1"></i><span id="deposito-info-desktop">{{ deposito|default:"Depósito no asignado" }}</span>
+                        </p>
+                    </div>
                 </div>
 
                 <a href="javascript:void(0)" onclick="cerrarSesion()"
