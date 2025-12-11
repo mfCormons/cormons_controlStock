@@ -429,20 +429,20 @@ def stockControlado_view(request):
 def logout_view(request):
     """
     Cierra sesión del usuario actual: limpia sesión y cookies de usuario,
-    pero mantiene token y datos de empresa para permitir cambio de usuario
+    y redirige al login
     """
     logger.debug("==== LOGOUT VIEW CONTROL STOCK ====")
 
     # Limpiar sesión de Django (usuario, nombre, empresa_ip, empresa_puerto, etc.)
     request.session.flush()
 
-    # Redirigir a la landing page (detectará falta de usuario y redirigirá al login)
-    response = redirect('http://landing.cormons.ar/')
+    # Redirigir al login
+    response = redirect('https://login.cormons.app/')
 
     # Borrar SOLO cookies de usuario (mantiene authToken y connection_config)
     response.delete_cookie('user_nombre', domain='.cormons.app')
     response.delete_cookie('user_usuario', domain='.cormons.app')
 
-    logger.debug("Cookies de usuario borradas, token y empresa mantenidos")
+    logger.debug("Cookies de usuario borradas, redirigiendo a login")
 
     return response
