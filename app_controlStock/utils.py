@@ -79,29 +79,35 @@ def get_connection_config(request):
 
 def obtener_datos_cookies(request):
     from urllib.parse import unquote
-    
+
     token = request.COOKIES.get('authToken')
     config = request.COOKIES.get('connection_config')
+    usuario = request.COOKIES.get('user_usuario')
 
     if not token or not config:
-        return None, None
+        return None, None, None
+
+    if not usuario or usuario.strip() == '':
+        return None, None, None
 
     try:
         # Decodificar URL encoding antes de parsear JSON
         config_decoded = unquote(config)
-        return token, json.loads(config_decoded)
+        return token, json.loads(config_decoded), usuario
     except json.JSONDecodeError as e:
         print(f"❌ Error parseando JSON: {e}")
         print(f"   Config recibido: {config}")
         print(f"   Config decoded: {config_decoded if 'config_decoded' in locals() else 'N/A'}")
-        return None, None
+        return None, None, None
 
 
-def renderizar_error(request, mensaje, empresa_nombre, redirect_to=None, redirect_delay=5):
+def renderizar_error(request, mensaje, empresa_nombre='', redirect_to=None, redirect_delay=5):
     """
     Renderiza página con mensaje de error
 
     Args:
+        mensaje: Mensaje de error a mostrar
+        empresa_nombre: Nombre de la empresa (opcional)
         redirect_to: URL a la que redirigir después del delay (opcional)
         redirect_delay: Segundos antes de redirigir (default: 5)
     """
