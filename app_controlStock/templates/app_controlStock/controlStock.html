@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Stock</title>
+    {% load static %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="icon" type="image/png" href="{% static 'web/images/cormonslogoo.png' %}">
+
+    <style>
+        /* Estilos específicos para control de stock */
+        .solicitud-row {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .solicitud-row:hover {
+            background-color: #f8f9fa;
+        }
+
+        .cantidad-input {
+            border: 2px solid #28a745;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .cantidad-input:focus {
+            border-color: #20c997;
+            box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+    <div class="container-fluid p-0 d-flex flex-column min-vh-100">
+        <!-- Header -->
+        <header class="navbar fixed-top bg-white shadow-sm">
+            <div class="container-fluid d-flex justify-content-between align-items-center flex-nowrap">
+                <div class="navbar-brand text-success fw-bold text-center flex-grow-1" style="min-width: 0;">
+                    <!-- Línea 1: Nombre de empresa y usuario -->
+                    <p id="empresa-usuario-header" class="mb-0 text-truncate" style="font-size: 0.85rem;">
+                        <span id="empresa-nombre-header" class="d-inline-block text-truncate" style="max-width: 150px; vertical-align: bottom;">{{ empresa_nombre|default:"Empresa" }}</span>
+                        <span class="d-none d-md-inline">[</span><span id="usuario-display" class="d-none d-md-inline">{{ usuario|default:"Usuario" }}</span><span class="d-none d-md-inline">],</span>
+                        <span id="nombre-display" class="d-none d-sm-inline">{{ nombre|default:"Nombre" }}</span>
+                    </p>
+                    <!-- Línea 2: Depósito -->
+                    <p class="mb-0 text-muted" style="font-size: 0.75rem;">
+                        <i class="fas fa-warehouse me-1"></i>
+                        <span id="deposito-info">{{ deposito|default:"Depósito no asignado" }}</span>
+                    </p>
+                </div>
+
+                <a href="javascript:void(0)" onclick="cerrarSesion()"
+                    class="btn btn-danger btn-sm d-inline-flex align-items-center flex-shrink-0"
+                    style="min-width: 40px;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span class="d-none d-sm-inline ms-1">Salir</span>
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-grow-1 mt-5 pt-3" style="padding-bottom: 70px;">
+            <div class="container" style="max-width: 800px;">
+
+                <!-- Card principal -->
+                <section class="card shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="mb-0">
+                                <i class="fas fa-clipboard-check text-success me-2"></i>
+                                Solicitudes Pendientes
+                            </h4>
+                            <button id="btn-actualizar" class="btn btn-success btn-sm" onclick="actualizarPendientes()">Actualizar</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Contenedor de solicitudes (render server-side) -->
+                <section id="solicitudes-container" class="card shadow-sm mb-4">
+                    {% include 'app_controlStock/solicitudes_table.html' %}
+                </section>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-dark text-white py-2 mt-auto fixed-bottom">
+            <div class="container-fluid px-2">
+                <div class="d-flex justify-content-center align-items-center gap-2 gap-sm-3 flex-wrap" style="font-size: 0.85rem;">
+                    <div class="d-flex align-items-center">
+                        <img src="{% static 'img/Isologo Cormons.png' %}" alt="Isologo Cormons"
+                            style="width: 30px; height: 30px; margin-right: 6px; filter: brightness(1.1);">
+                    </div>
+
+                    <div class="ayuda-contacto d-flex align-items-center">
+                        <a href="https://cormons.freshdesk.com/support/solutions/folders/35000248621"
+                            class="text-white text-decoration-none" style="font-size: 0.85rem;">
+                            <i class="fas fa-question-circle me-1 d-sm-none"></i>
+                            <span class="d-none d-sm-inline">Obtener ayuda</span>
+                            <span class="d-inline d-sm-none">Ayuda</span>
+                        </a>
+                    </div>
+
+                    <div class="whatsapp-contacto d-flex align-items-center">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="Logo WhatsApp"
+                            style="width: 20px; height: 20px; margin-right: 4px;">
+                        <a href="https://wa.me/543586008737" target="_blank" class="text-white text-decoration-none" style="font-size: 0.85rem;">3586008737</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal para registrar cantidad -->
+    <div class="modal fade" id="modalControl" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 8px;">
+                <div class="modal-header bg-success text-white text-center position-relative"
+                    style="background-color: #28a745 !important; border-bottom: none; padding: 1rem;">
+                    <h5 class="modal-title fw-bold w-100 text-center" style="margin: 0;">
+                        <i class="fas fa-clipboard-check me-2"></i>Registrar Control
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white position-absolute" data-bs-dismiss="modal"
+                        aria-label="Close" style="top: 50%; right: 1rem; transform: translateY(-50%);"></button>
+                </div>
+
+                <div class="modal-body p-4" style="background-color: #f8f9fa;">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold mb-1" style="color: #333;">Producto:</label>
+                        <p id="modal-descripcion" class="mb-0" style="color: #666; font-size: 14px;"></p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold mb-1" style="color: #333;">Código:</label>
+                        <p id="modal-codigo" class="mb-0" style="color: #666; font-size: 14px;"></p>
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <label for="cantidad-contada" class="form-label fw-bold" style="color: #28a745;">
+                            <i class="fas fa-check-circle me-1"></i>Cantidad Contada:
+                        </label>
+                        <input type="number" class="form-control cantidad-input" id="cantidad-contada"
+                            placeholder="Ingrese cantidad" min="0" step="1" autocomplete="off" autofocus>
+                    </div>
+
+
+                </div>
+
+                <div class="modal-footer justify-content-end"
+                    style="background-color: #f8f9fa; border-top: none; padding: 1rem;">
+                    <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal"
+                        style="padding: 8px 16px; font-weight: 500;">
+                        <i class="fas fa-times me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="confirmarControl()"
+                        style="background-color: #28a745; border-color: #28a745; padding: 8px 16px; font-weight: 500;">
+                        <i class="fas fa-check me-1"></i>Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template para lista de solicitudes -->
+    <template id="solicitudes-template">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="fw-semibold">Fecha Solicitud</th>
+                        <th class="fw-semibold">Código</th>
+                        <th class="fw-semibold">Descripción</th>
+                    </tr>
+                </thead>
+                <tbody id="solicitudes-tbody">
+                    <!-- Las filas se agregan dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+    </template>
+    <!-- Modal Confirmar Logout -->
+    <div class="modal fade" id="modalLogout" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <i class="fas fa-exclamation-circle text-warning" style="font-size: 3rem;"></i>
+                    <p class="mt-3 mb-0 fs-5">¿Está seguro que desea cerrar sesión?</p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="confirmarLogout()">
+                        <i class="fas fa-sign-out-alt me-1"></i>Salir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal Confirmar Registro -->
+    <div class="modal fade" id="modalConfirmarRegistro" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Registro
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <i class="fas fa-question-circle text-warning" style="font-size: 3rem;"></i>
+                    <p class="mt-3 mb-2 fs-5" id="confirmar-mensaje"></p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="ejecutarRegistro()">
+                        <i class="fas fa-check me-1"></i>Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Alerta Genérico -->
+    <div class="modal fade" id="modalAlerta" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" id="modal-alerta-header">
+                    <h5 class="modal-title" id="modal-alerta-titulo">
+                        <i class="fas fa-info-circle me-2"></i>Información
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <i id="modal-alerta-icono" class="fas fa-info-circle" style="font-size: 3rem;"></i>
+                    <p class="mt-3 mb-0 fs-5" id="modal-alerta-mensaje"></p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        <i class="fas fa-check me-1"></i>Entendido
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Error con Redirección (NO SE PUEDE CERRAR) -->
+    <div class="modal fade" id="modalErrorRedirect" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-danger" style="border-width: 3px;">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title w-100 text-center">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Sesión Inválida
+                    </h5>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <i class="fas fa-times-circle text-danger" style="font-size: 4rem;"></i>
+                    <p class="mt-3 mb-2 fs-5 fw-bold" id="modal-error-mensaje" style="white-space: pre-line;"></p>
+                    <hr class="my-3">
+                    <p class="mb-0 text-muted">
+                        <i class="fas fa-arrow-right me-2"></i>Redirigiendo al login en <span id="modal-countdown" class="fw-bold text-danger">5</span> segundos...
+                    </p>
+                </div>
+                <div class="modal-footer justify-content-center bg-light">
+                    <button type="button" class="btn btn-danger" id="btn-redirect-now">
+                        <i class="fas fa-sign-out-alt me-1"></i>Ir al Login Ahora
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cargar el script principal -->
+    <script src="{% static 'js/controlStock.js' %}"></script>
+    <script>
+        console.log('🔍 DEBUG INICIAL:');
+        console.log('Token:', localStorage.getItem('authToken') ? 'Existe ✅' : 'NO existe ❌');
+        console.log('Sesión activa:', localStorage.getItem('sesion_activa'));
+        console.log('Requiere creds:', localStorage.getItem('requiere_credenciales'));
+        console.log('Empresa IP:', localStorage.getItem('empresaIP'));
+        console.log('Empresa Puerto:', localStorage.getItem('empresaPuerto'));
+        console.log('Cookies:', document.cookie);
+    </script>
+
+</body>
+
+</html>
