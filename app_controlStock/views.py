@@ -250,7 +250,9 @@ def setup_mock(request):
     return HttpResponse(html)
 
 def controlStock_view(request):
-    print("==== CONTROL STOCK VIEW INICIANDO ====")
+    import time
+    t_view_start = time.perf_counter()
+    logger.debug("==== CONTROL STOCK VIEW INICIANDO ====")
 
     # 1) Cookies
     token, datos_conexion, usuario_cookie = obtener_datos_cookies(request)
@@ -287,9 +289,10 @@ def controlStock_view(request):
     print(f"✅ Token y datos OK - verificando con VFP...")
 
     # 2) Verificar token
+    t_verificar_start = time.perf_counter()
     verificarToken = comando_verificarToken(token, request)
-
-    print(f"📡 Respuesta verificarToken: {verificarToken}")
+    t_verificar_end = time.perf_counter()
+    logger.debug(f"📡 Respuesta verificarToken: {verificarToken} (duracion: {t_verificar_end - t_verificar_start:.3f}s)")
 
     if not verificarToken["estado"]:
         mensaje = verificarToken.get("mensaje", "Token inválido")
@@ -307,7 +310,10 @@ def controlStock_view(request):
     print(f"✅ Usuario verificado: {usuario}")
 
     # 3) Consultar pendientes
+    t_pend_start = time.perf_counter()
     respuesta = comando_controlPendientes(token, request, usrActivo=usuario)
+    t_pend_end = time.perf_counter()
+    logger.debug(f"📡 Respuesta controlPendientes (duracion: {t_pend_end - t_pend_start:.3f}s)")
     if not respuesta:
         return renderizar_error(request, "Error al obtener stock pendientes", empresa_nombre)
 
@@ -329,6 +335,8 @@ def controlStock_view(request):
     )
 
     # 5) Render
+    t_view_end = time.perf_counter()
+    logger.debug(f"CONTROL STOCK VIEW total duration: {t_view_end - t_view_start:.3f}s")
     return render(request, "app_controlStock/controlStock.html", {
         "pendientes": pendientes,
         "empresa_nombre": empresa_nombre,
