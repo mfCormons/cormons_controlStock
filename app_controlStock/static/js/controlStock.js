@@ -33,6 +33,17 @@
         modalElement.addEventListener('hidden.bs.modal', function() {
             console.log('🔄 Modal cerrado - Actualizando pendientes');
             solicitudSeleccionada = null;
+            // Restaurar estado del botón Confirmar si quedó deshabilitado
+            try {
+                const btn = modalElement.querySelector('.btn-success');
+                if (btn && btn.dataset && btn.dataset.origHtml) {
+                    btn.disabled = false;
+                    btn.innerHTML = btn.dataset.origHtml;
+                    delete btn.dataset.origHtml;
+                }
+            } catch (e) {
+                console.warn('No se pudo restaurar el botón confirmar del modal', e);
+            }
             actualizarPendientes();
         });
     }
@@ -236,6 +247,8 @@
         let textoOriginal = null;
         if (btnConfirmar) {
             textoOriginal = btnConfirmar.innerHTML;
+            // Guardar HTML original en data-attribute para poder restaurarlo si el modal se cierra
+            try { btnConfirmar.dataset.origHtml = textoOriginal; } catch (e) { /* ignore */ }
             btnConfirmar.disabled = true;
             btnConfirmar.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Guardando...';
         }
@@ -286,6 +299,14 @@
                     modalControl.hide();
                 }
                 mostrarAlerta(data.mensaje || 'Control registrado correctamente', 'success');
+                // Restaurar botón confirmar si quedó con spinner
+                if (btnConfirmar) {
+                    try {
+                        btnConfirmar.disabled = false;
+                        btnConfirmar.innerHTML = textoOriginal || btnConfirmar.dataset.origHtml || '<i class="fas fa-check me-1"></i>Confirmar';
+                        delete btnConfirmar.dataset.origHtml;
+                    } catch (e) { console.warn('No se pudo restaurar btnConfirmar tras éxito', e); }
+                }
                 solicitudSeleccionada = null;
             } else {
                 mostrarAlerta(data.mensaje || 'Error al registrar control', 'error');
