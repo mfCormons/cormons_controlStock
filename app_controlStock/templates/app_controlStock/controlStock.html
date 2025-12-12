@@ -8,11 +8,76 @@
     {% load static %}
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <link rel="icon" type="image/png" href="{% static 'web/images/cormonslogoo.png' %}">
+    <link rel="icon" type="image/png" href="{% static 'img/favicon_cormons.png' %}">
 
     <style>
+        /* Variables de color base */
+        :root {
+            --primary-color: #28a745;
+            --primary-hover: #218838;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --success-color: #28a745;
+            --dark-color: #1f2937;
+            --light-gray: #f8f9fa;
+            --border-color: #dee2e6;
+        }
+
+        /* Body base */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header-section {
+            background: white;
+        }
+
+        .header-section h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .header-section .user-info {
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 20px 0;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        footer a {
+            color: white;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        footer a:hover {
+            opacity: 0.8;
+        }
+
+        footer img {
+            filter: brightness(1.1);
+        }
+
         /* Estilos específicos para control de stock */
         .solicitud-row {
             cursor: pointer;
@@ -20,11 +85,11 @@
         }
 
         .solicitud-row:hover {
-            background-color: #f8f9fa;
+            background-color: var(--light-gray);
         }
 
         .cantidad-input {
-            border: 2px solid #28a745;
+            border: 2px solid var(--primary-color);
             font-size: 1.2rem;
             font-weight: 600;
         }
@@ -42,46 +107,51 @@
             font-size: 0.85rem;
             font-weight: 500;
         }
+
+        /* Main content wrapper */
+        .main-wrapper {
+            padding-bottom: 100px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-wrapper {
+                padding-bottom: 120px;
+            }
+
+            footer .container {
+                flex-direction: column;
+                gap: 10px !important;
+            }
+
+            .header-section h1 {
+                font-size: 1.25rem;
+            }
+        }
     </style>
 </head>
 
-<body class="bg-light">
-    <div class="container-fluid p-0 d-flex flex-column min-vh-100">
-        <!-- Header -->
-        <header class="navbar fixed-top bg-white shadow-sm">
-            <div class="container-fluid d-flex justify-content-between align-items-center flex-nowrap">
-                <div class="navbar-brand text-success fw-bold text-center flex-grow-1" style="min-width: 0;">
-                    <!-- VERSIÓN MÓVIL: 2 líneas (sin depósito) -->
-                    <div class="d-md-none">
-                        <p class="mb-0" style="font-size: 0.8rem;">
-                            <span id="empresa-nombre-header" class="text-truncate d-inline-block" style="max-width: 200px; vertical-align: bottom;">{{ empresa_nombre|default:"Empresa" }}</span>
-                        </p>
-                        <p class="mb-0" style="font-size: 0.75rem;">
-                            [<span id="usuario-display">{{ usuario|default:"Usuario" }}</span>] <span id="nombre-display">{{ nombre|default:"Nombre" }}</span>
-                        </p>
-                    </div>
-
-                    <!-- VERSIÓN DESKTOP: 1 línea (sin depósito) -->
-                    <div class="d-none d-md-block">
-                        <p class="mb-0 text-truncate" style="font-size: 0.85rem;">
-                            <span id="empresa-nombre-header-desktop" class="d-inline-block text-truncate" style="max-width: 150px; vertical-align: bottom;">{{ empresa_nombre|default:"Empresa" }}</span>
-                            [<span id="usuario-display-desktop">{{ usuario|default:"Usuario" }}</span>], <span id="nombre-display-desktop">{{ nombre|default:"Nombre" }}</span>
-                        </p>
-                    </div>
+<body>
+    <div class="container main-wrapper">
+        <div class="row justify-content-center w-100">
+            <div class="col-12">
+                <!-- Header -->
+                <div class="text-center mb-4 pb-3 border-bottom">
+                    <h1 class="h3 fw-bold text-dark mb-2">
+                        <span id="empresa-nombre-header">{{ empresa_nombre|default:"Empresa" }}</span>
+                    </h1>
+                    <p class="text-muted">
+                        Bienvenido, <span id="nombre-display">{{ nombre|default:usuario }}</span>
+                    </p>
+                    <a href="javascript:void(0)" onclick="cerrarSesion()"
+                        class="btn btn-danger btn-sm position-absolute top-0 end-0"
+                        style="margin-top: 10px; margin-right: 15px;">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span class="d-none d-sm-inline ms-1">Salir</span>
+                    </a>
                 </div>
 
-                <a href="javascript:void(0)" onclick="cerrarSesion()"
-                    class="btn btn-danger btn-sm d-inline-flex align-items-center flex-shrink-0"
-                    style="min-width: 40px;">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span class="d-none d-sm-inline ms-1">Salir</span>
-                </a>
-            </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="flex-grow-1 mt-5 pt-3" style="padding-bottom: 70px;">
-            <div class="container" style="max-width: 800px;">
+                <!-- Main Content -->
 
                 <!-- Card principal con Depósito -->
                 <section class="card shadow-sm mb-4">
@@ -127,35 +197,33 @@
                     {% include 'app_controlStock/solicitudes_table.html' %}
                 </section>
             </div>
-        </main>
-
-        <!-- Footer -->
-        <footer class="bg-dark text-white py-2 mt-auto fixed-bottom">
-            <div class="container-fluid px-2">
-                <div class="d-flex justify-content-center align-items-center gap-2 gap-sm-3 flex-wrap" style="font-size: 0.85rem;">
-                    <div class="d-flex align-items-center">
-                        <img src="{% static 'img/Isologo Cormons.png' %}" alt="Isologo Cormons"
-                            style="width: 30px; height: 30px; margin-right: 6px; filter: brightness(1.1);">
-                    </div>
-
-                    <div class="ayuda-contacto d-flex align-items-center">
-                        <a href="https://cormons.freshdesk.com/support/solutions/folders/35000248621"
-                            class="text-white text-decoration-none" style="font-size: 0.85rem;">
-                            <i class="fas fa-question-circle me-1 d-sm-none"></i>
-                            <span class="d-none d-sm-inline">Obtener ayuda</span>
-                            <span class="d-inline d-sm-none">Ayuda</span>
-                        </a>
-                    </div>
-
-                    <div class="whatsapp-contacto d-flex align-items-center">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="Logo WhatsApp"
-                            style="width: 20px; height: 20px; margin-right: 4px;">
-                        <a href="https://wa.me/543586008737" target="_blank" class="text-white text-decoration-none" style="font-size: 0.85rem;">3586008737</a>
-                    </div>
-                </div>
-            </div>
-        </footer>
+        </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white pt-3 pb-3 mt-auto fixed-bottom">
+        <div class="container d-flex justify-content-center align-items-center gap-4 flex-wrap">
+            <div class="d-flex align-items-center">
+                <img src="{% static 'img/favicon_cormons.png' %}" alt="Isologo Cormons"
+                    style="width: 40px; height: 40px; margin-right: 10px; filter: brightness(1.1);">
+            </div>
+
+            <div class="ayuda-contacto d-flex align-items-center">
+                <a href="https://cormons.freshdesk.com/support/solutions/folders/35000248621"
+                    class="text-white text-decoration-none">
+                    Obtener ayuda
+                </a>
+            </div>
+
+            <div class="whatsapp-contacto d-flex align-items-center">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+                    alt="Logo WhatsApp"
+                    style="width: 24px; height: 24px; margin-right: 6px;">
+                <a href="https://wa.me/543586008737" target="_blank"
+                    class="text-white text-decoration-none">3586 00 8737</a>
+            </div>
+        </div>
+    </footer>
 
     <!-- Modal para registrar cantidad -->
     <div class="modal fade" id="modalControl" tabindex="-1" aria-hidden="true">
