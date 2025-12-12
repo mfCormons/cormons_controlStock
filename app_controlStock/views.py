@@ -292,7 +292,7 @@ def controlStock_view(request):
     t_verificar_start = time.perf_counter()
     verificarToken = comando_verificarToken(token, request)
     t_verificar_end = time.perf_counter()
-    logger.debug(f"📡 Respuesta verificarToken: {verificarToken} (duracion: {t_verificar_end - t_verificar_start:.3f}s)")
+    logger.info(f"📡 Respuesta verificarToken: {verificarToken} (duracion: {t_verificar_end - t_verificar_start:.3f}s)")
 
     if not verificarToken["estado"]:
         mensaje = verificarToken.get("mensaje", "Token inválido")
@@ -313,7 +313,7 @@ def controlStock_view(request):
     t_pend_start = time.perf_counter()
     respuesta = comando_controlPendientes(token, request, usrActivo=usuario)
     t_pend_end = time.perf_counter()
-    logger.debug(f"📡 Respuesta controlPendientes (duracion: {t_pend_end - t_pend_start:.3f}s)")
+    logger.info(f"📡 Respuesta controlPendientes (duracion: {t_pend_end - t_pend_start:.3f}s)")
     if not respuesta:
         return renderizar_error(request, "Error al obtener stock pendientes", empresa_nombre)
 
@@ -336,7 +336,7 @@ def controlStock_view(request):
 
     # 5) Render
     t_view_end = time.perf_counter()
-    logger.debug(f"CONTROL STOCK VIEW total duration: {t_view_end - t_view_start:.3f}s")
+    logger.info(f"CONTROL STOCK VIEW total duration: {t_view_end - t_view_start:.3f}s")
     return render(request, "app_controlStock/controlStock.html", {
         "pendientes": pendientes,
         "empresa_nombre": empresa_nombre,
