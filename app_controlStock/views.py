@@ -4,6 +4,7 @@ from django.http import JsonResponse
 #from compartidos.cookies_utils import sincronizar_conexion_a_sesion
 from .utils import obtener_datos_cookies, renderizar_error, renderizar_exito
 from .services import comando_verificarToken, comando_controlPendientes, comando_stockControlado
+from .__init__ import APP_VERSION
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 import json
@@ -288,38 +289,71 @@ def controlStock_view(request):
 
     print(f"✅ Token y datos OK - verificando con VFP...")
 
-    # 2) Verificar token
-    t_verificar_start = time.perf_counter()
-    verificarToken = comando_verificarToken(token, request)
-    t_verificar_end = time.perf_counter()
-    logger.info(f"📡 Respuesta verificarToken: {verificarToken} (duracion: {t_verificar_end - t_verificar_start:.3f}s)")
+    # 2) OPTIMIZACIÓN: Usar la misma conexión para verificar token y obtener pendientes
+    # Esto evita el delay de 3s en el segundo connect()
+    from .tcp_client import enviar_consulta_tcp_batch
 
-    if not verificarToken["estado"]:
-        mensaje = verificarToken.get("mensaje", "Token inválido")
-        # Limpiar sesión
+    t_batch_start = time.perf_counter()
+
+    # Enviar ambas consultas en batch (reutilizando conexión)
+    resultados_batch = enviar_consulta_tcp_batch([
+        {
+            "Comando": "verificarToken",
+            "Token": token,
+            "Vista": "CONTROLSTOCK",
+            "Version": APP_VERSION
+        },
+        {
+            "Comando": "controlPendientes",
+            "Token": token,
+            "Vista": "CONTROLSTOCK",
+            "usrActivo": usuario_cookie
+        }
+    ], request)
+
+    t_batch_end = time.perf_counter()
+    logger.info(f"📡 Batch (verificar + pendientes) duración: {t_batch_end - t_batch_start:.3f}s")
+
+    if not resultados_batch or len(resultados_batch) < 2:
+        return renderizar_error(request, "Error de comunicación con el servidor", empresa_nombre, redirect_to='https://login.cormons.app/', redirect_delay=5)
+
+    # Procesar resultado de verificarToken
+    verificarToken = resultados_batch[0]
+
+    # Normalizar respuesta de verificarToken (VFP devuelve "Estado" con mayúscula)
+    estado_raw = verificarToken.get("Estado", verificarToken.get("estado"))
+    if isinstance(estado_raw, bool):
+        verificarToken["estado"] = estado_raw
+    else:
+        verificarToken["estado"] = str(estado_raw).upper() in ("T", "TRUE", "1", "OK")
+
+    if not verificarToken.get("estado"):
+        mensaje = verificarToken.get("Mensaje", verificarToken.get("mensaje", "Token inválido"))
         request.session.flush()
-        # Mostrar error y redirigir después de 5 segundos
         return renderizar_error(request, mensaje, empresa_nombre, redirect_to='https://login.cormons.app/', redirect_delay=5)
 
-    usuario = verificarToken["usuario"]
-    nombre = verificarToken["nombre"]
-
+    usuario = verificarToken.get("usuario", verificarToken.get("Usuario", ""))
+    nombre = verificarToken.get("nombre", verificarToken.get("Nombre", ""))
     request.session['usuario'] = usuario
     request.session['nombre'] = nombre
-
     print(f"✅ Usuario verificado: {usuario}")
 
-    # 3) Consultar pendientes
-    t_pend_start = time.perf_counter()
-    respuesta = comando_controlPendientes(token, request, usrActivo=usuario)
-    t_pend_end = time.perf_counter()
-    logger.info(f"📡 Respuesta controlPendientes (duracion: {t_pend_end - t_pend_start:.3f}s)")
+    # Procesar resultado de controlPendientes
+    respuesta = resultados_batch[1]
+    logger.info(f"📡 Respuesta batch completada")
     if not respuesta:
         return renderizar_error(request, "Error al obtener stock pendientes", empresa_nombre)
 
+    # Normalizar 'Estado' a booleano (VFP puede devolver "T"/"F" en lugar de True/False)
+    estado_raw = respuesta.get("Estado", respuesta.get("estado"))
+    if isinstance(estado_raw, bool):
+        respuesta["estado"] = estado_raw
+    else:
+        respuesta["estado"] = str(estado_raw).upper() in ("T", "TRUE", "1", "OK")
+
     # Verificar si VFP respondió con error
     if respuesta.get("estado") is False:
-        mensaje = respuesta.get("mensaje", "Error al obtener stock pendientes")
+        mensaje = respuesta.get("Mensaje", respuesta.get("mensaje", "Error al obtener stock pendientes"))
         # Limpiar sesión
         request.session.flush()
         # Mostrar error y redirigir después de 5 segundos
@@ -336,13 +370,13 @@ def controlStock_view(request):
 
     # 5) Render
     t_view_end = time.perf_counter()
-    logger.info(f"CONTROL STOCK VIEW total duration: {t_view_end - t_view_start:.3f}s")
+    logger.info(f"✅ CONTROL STOCK VIEW OPTIMIZADO (batch) total duration: {t_view_end - t_view_start:.3f}s")
     return render(request, "app_controlStock/controlStock.html", {
         "pendientes": pendientes,
         "empresa_nombre": empresa_nombre,
         "usuario": usuario,
         "nombre": nombre,
-        "deposito": respuesta.get("deposito", ""),
+        "deposito": respuesta.get("Deposito", respuesta.get("deposito", "")),
         "error": False,
     })
 
