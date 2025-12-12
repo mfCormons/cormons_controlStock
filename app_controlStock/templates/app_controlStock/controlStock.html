@@ -53,20 +53,28 @@
                 <div class="navbar-brand text-success fw-bold text-center flex-grow-1" style="min-width: 0;">
                     <!-- VERSIÓN MÓVIL: 2 líneas (sin depósito) -->
                     <div class="d-md-none">
+                        {% if not error %}
                         <p class="mb-0" style="font-size: 0.8rem;">
                             <span id="empresa-nombre-header" class="text-truncate d-inline-block" style="max-width: 200px; vertical-align: bottom;">{{ empresa_nombre|default:"Empresa" }}</span>
                         </p>
                         <p class="mb-0" style="font-size: 0.75rem;">
                             [<span id="usuario-display">{{ usuario|default:"Usuario" }}</span>] <span id="nombre-display">{{ nombre|default:"Nombre" }}</span>
                         </p>
+                        {% else %}
+                        <p class="mb-0" style="font-size: 0.8rem;">{{ empresa_nombre|default:"Empresa" }}</p>
+                        {% endif %}
                     </div>
 
                     <!-- VERSIÓN DESKTOP: 1 línea (sin depósito) -->
                     <div class="d-none d-md-block">
+                        {% if not error %}
                         <p class="mb-0 text-truncate" style="font-size: 0.85rem;">
                             <span id="empresa-nombre-header-desktop" class="d-inline-block text-truncate" style="max-width: 150px; vertical-align: bottom;">{{ empresa_nombre|default:"Empresa" }}</span>
                             [<span id="usuario-display-desktop">{{ usuario|default:"Usuario" }}</span>], <span id="nombre-display-desktop">{{ nombre|default:"Nombre" }}</span>
                         </p>
+                        {% else %}
+                        <p class="mb-0 text-truncate" style="font-size: 0.85rem;">{{ empresa_nombre|default:"Empresa" }}</p>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -81,6 +89,13 @@
 
         <!-- Main Content -->
         <main class="flex-grow-1 mt-5 pt-3" style="padding-bottom: 70px;">
+            {% if error %}
+            <div class="container text-center" style="max-width: 800px; margin-top: 100px;">
+                <i class="fas fa-exclamation-triangle text-danger" style="font-size: 5rem;"></i>
+                <h2 class="mt-4">Sesión Inválida</h2>
+                <p class="text-muted">Redirigiendo al login...</p>
+            </div>
+            {% else %}
             <div class="container" style="max-width: 800px;">
 
                 <!-- Card principal con Depósito -->
@@ -127,6 +142,7 @@
                     {% include 'app_controlStock/solicitudes_table.html' %}
                 </section>
             </div>
+            {% endif %}
         </main>
 
         <!-- Footer -->
@@ -337,6 +353,21 @@
         console.log('Empresa Puerto:', localStorage.getItem('empresaPuerto'));
         console.log('Cookies:', document.cookie);
     </script>
+    {% if error and redirect_to %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mensaje = "{{ mensaje|escapejs }}";
+            const redirectUrl = "{{ redirect_to|escapejs }}";
+            const delay = parseInt("{{ redirect_delay|default:'5' }}", 10);
+
+            if (typeof window.mostrarErrorConRedirect === 'function') {
+                window.mostrarErrorConRedirect(mensaje, redirectUrl, delay);
+            } else {
+                setTimeout(function() { window.location.href = redirectUrl; }, delay * 1000);
+            }
+        });
+    </script>
+    {% endif %}
 
 </body>
 
