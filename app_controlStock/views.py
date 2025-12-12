@@ -335,6 +335,7 @@ def controlStock_view(request):
         "usuario": usuario,
         "nombre": nombre,
         "deposito": respuesta.get("deposito", ""),
+        "error": False,
     })
 
 
@@ -366,9 +367,11 @@ def controlPendientes_view(request):
     if respuesta_pendientes.get("estado") is False:
         # Limpiar sesión
         request.session.flush()
-        # Retornar 401 para que el frontend redirija al login
+        # Retornar 401 incluyendo el mensaje devuelto por VFP para que el frontend
+        # pueda mostrar el detalle exacto antes de redirigir.
+        mensaje_vfp = respuesta_pendientes.get('mensaje', 'Sesión inválida')
         return JsonResponse({
-            "error": "Sesión inválida",
+            "error": mensaje_vfp,
             "redirect": "https://login.cormons.app/"
         }, status=401)
 
