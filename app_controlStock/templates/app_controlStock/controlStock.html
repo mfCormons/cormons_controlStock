@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <link rel="icon" type="image/png" href="{% static 'web/images/cormonslogoo.png' %}">
+    <link rel="icon" type="image/png" href="{% static 'img/favicon_cormons.png' %}">
 
     <style>
         /* Estilos específicos para control de stock */
@@ -33,6 +33,15 @@
             border-color: #20c997;
             box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
         }
+
+        .badge-deposito {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
     </style>
 </head>
 
@@ -42,17 +51,23 @@
         <header class="navbar fixed-top bg-white shadow-sm">
             <div class="container-fluid d-flex justify-content-between align-items-center flex-nowrap">
                 <div class="navbar-brand text-success fw-bold text-center flex-grow-1" style="min-width: 0;">
-                    <!-- Línea 1: Nombre de empresa y usuario -->
-                    <p id="empresa-usuario-header" class="mb-0 text-truncate" style="font-size: 0.85rem;">
-                        <span id="empresa-nombre-header" class="d-inline-block text-truncate" style="max-width: 150px; vertical-align: bottom;">{{ empresa_nombre|default:"Empresa" }}</span>
-                        <span class="d-none d-md-inline">[</span><span id="usuario-display" class="d-none d-md-inline">{{ usuario|default:"Usuario" }}</span><span class="d-none d-md-inline">],</span>
-                        <span id="nombre-display" class="d-none d-sm-inline">{{ nombre|default:"Nombre" }}</span>
-                    </p>
-                    <!-- Línea 2: Depósito -->
-                    <p class="mb-0 text-muted" style="font-size: 0.75rem;">
-                        <i class="fas fa-warehouse me-1"></i>
-                        <span id="deposito-info">{{ deposito|default:"Depósito no asignado" }}</span>
-                    </p>
+                    <!-- VERSIÓN MÓVIL: 2 líneas (sin depósito) -->
+                    <div class="d-md-none">
+                        <p class="mb-0" style="font-size: 0.8rem;">
+                            <span id="empresa-nombre-header" class="text-truncate d-inline-block" style="max-width: 200px; vertical-align: bottom;">{{ empresa_nombre|default:"Empresa" }}</span>
+                        </p>
+                        <p class="mb-0" style="font-size: 0.75rem;">
+                            [<span id="usuario-display">{{ usuario|default:"Usuario" }}</span>] <span id="nombre-display">{{ nombre|default:"Nombre" }}</span>
+                        </p>
+                    </div>
+
+                    <!-- VERSIÓN DESKTOP: 1 línea (sin depósito) -->
+                    <div class="d-none d-md-block">
+                        <p class="mb-0 text-truncate" style="font-size: 0.85rem;">
+                            <span id="empresa-nombre-header-desktop" class="d-inline-block text-truncate" style="max-width: 150px; vertical-align: bottom;">{{ empresa_nombre|default:"Empresa" }}</span>
+                            [<span id="usuario-display-desktop">{{ usuario|default:"Usuario" }}</span>], <span id="nombre-display-desktop">{{ nombre|default:"Nombre" }}</span>
+                        </p>
+                    </div>
                 </div>
 
                 <a href="javascript:void(0)" onclick="cerrarSesion()"
@@ -68,15 +83,41 @@
         <main class="flex-grow-1 mt-5 pt-3" style="padding-bottom: 70px;">
             <div class="container" style="max-width: 800px;">
 
-                <!-- Card principal -->
+                <!-- Card principal con Depósito -->
                 <section class="card shadow-sm mb-4">
                     <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h4 class="mb-0">
-                                <i class="fas fa-clipboard-check text-success me-2"></i>
-                                Solicitudes Pendientes
-                            </h4>
-                            <button id="btn-actualizar" class="btn btn-success btn-sm" onclick="actualizarPendientes()">Actualizar</button>
+                        <!-- VERSIÓN MÓVIL: Stack vertical -->
+                        <div class="d-md-none">
+                            <div class="mb-3">
+                                <h4 class="mb-2">
+                                    <i class="fas fa-clipboard-check text-success me-2"></i>
+                                    Solicitudes Pendientes
+                                </h4>
+                                <div class="badge-deposito">
+                                    <i class="fas fa-warehouse me-1"></i>
+                                    <span id="deposito-info">{{ deposito|default:"Depósito" }}</span>
+                                </div>
+                            </div>
+                            <button id="btn-actualizar" class="btn btn-success btn-sm w-100" onclick="actualizarPendientes()">
+                                <i class="fas fa-sync-alt me-1"></i>Actualizar
+                            </button>
+                        </div>
+
+                        <!-- VERSIÓN DESKTOP: Todo en una línea -->
+                        <div class="d-none d-md-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-clipboard-check text-success me-2"></i>
+                                    Solicitudes Pendientes
+                                </h4>
+                                <div class="badge-deposito">
+                                    <i class="fas fa-warehouse me-1"></i>
+                                    <span id="deposito-info-desktop">{{ deposito|default:"Depósito no asignado" }}</span>
+                                </div>
+                            </div>
+                            <button id="btn-actualizar" class="btn btn-success btn-sm" onclick="actualizarPendientes()">
+                                <i class="fas fa-sync-alt me-1"></i>Actualizar
+                            </button>
                         </div>
                     </div>
                 </section>
@@ -93,7 +134,7 @@
             <div class="container-fluid px-2">
                 <div class="d-flex justify-content-center align-items-center gap-2 gap-sm-3 flex-wrap" style="font-size: 0.85rem;">
                     <div class="d-flex align-items-center">
-                        <img src="{% static 'img/Isologo Cormons.png' %}" alt="Isologo Cormons"
+                        <img src="{% static 'img/favicon_cormons.png' %}" alt="Isologo Cormons"
                             style="width: 30px; height: 30px; margin-right: 6px; filter: brightness(1.1);">
                     </div>
 
