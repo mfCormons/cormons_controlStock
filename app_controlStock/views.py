@@ -289,78 +289,20 @@ def controlStock_view(request):
 
     print(f"✅ Token y datos OK - verificando con VFP...")
 
-    # 2) OPTIMIZACIÓN: Ejecutar ambas llamadas TCP en PARALELO
-    # VFP cierra la conexión tras cada respuesta, así que no podemos reutilizar el socket
-    # Pero SÍ podemos hacer ambas llamadas al mismo tiempo
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-    from .tcp_client import enviar_consulta_tcp
-    import json as json_lib
+    # 2) OPTIMIZACIÓN: Solo validar cookies y renderizar vacío
+    # VFP no acepta conexiones paralelas ni reutilización de sockets
+    # La única forma de ser rápido es NO hacer llamadas TCP en la carga inicial
+    # Las llamadas se harán desde JavaScript después
 
-    t_parallel_start = time.perf_counter()
-
-    def llamada_verificar_token():
-        mensaje = {
-            "Comando": "verificarToken",
-            "Token": token,
-            "Vista": "CONTROLSTOCK",
-            "Version": APP_VERSION
-        }
-        return comando_verificarToken(token, request)
-
-    def llamada_control_pendientes():
-        return comando_controlPendientes(token, request, usrActivo=usuario_cookie)
-
-    # Ejecutar AMBAS llamadas en paralelo
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        future_verificar = executor.submit(llamada_verificar_token)
-        future_pendientes = executor.submit(llamada_control_pendientes)
-
-        # Esperar resultados
-        verificarToken = future_verificar.result()
-        respuesta = future_pendientes.result()
-
-    t_parallel_end = time.perf_counter()
-    logger.info(f"📡 Llamadas PARALELAS (verificar + pendientes) duración: {t_parallel_end - t_parallel_start:.3f}s")
-
-    # Validar verificarToken
-    if not verificarToken or not verificarToken.get("estado"):
-        mensaje = verificarToken.get("mensaje", "Token inválido") if verificarToken else "Error de conexión"
-        request.session.flush()
-        return renderizar_error(request, mensaje, empresa_nombre, redirect_to='https://login.cormons.app/', redirect_delay=5)
-
-    usuario = verificarToken.get("usuario", "")
-    nombre = verificarToken.get("nombre", "")
-    request.session['usuario'] = usuario
-    request.session['nombre'] = nombre
-    print(f"✅ Usuario verificado: {usuario}")
-
-    # Validar controlPendientes
-    if not respuesta:
-        return renderizar_error(request, "Error al obtener stock pendientes", empresa_nombre)
-
-    if respuesta.get("estado") is False:
-        mensaje = respuesta.get("mensaje", "Error al obtener stock pendientes")
-        request.session.flush()
-        return renderizar_error(request, mensaje, empresa_nombre, redirect_to='https://login.cormons.app/', redirect_delay=5)
-
-    # 4) Normalizar productos
-    pendientes = (
-        respuesta.get("pendientes")
-        or respuesta.get("PRODUCTOS")
-        or respuesta.get("productos")
-        or respuesta.get("PENDIENTES")
-        or []
-    )
-
-    # 5) Render
     t_view_end = time.perf_counter()
-    logger.info(f"✅ CONTROL STOCK VIEW OPTIMIZADO (paralelo) total duration: {t_view_end - t_view_start:.3f}s")
+    logger.info(f"✅ CONTROL STOCK VIEW (carga rápida sin TCP): {t_view_end - t_view_start:.3f}s")
+
     return render(request, "app_controlStock/controlStock.html", {
-        "pendientes": pendientes,
-        "empresa_nombre": empresa_nombre,
-        "usuario": usuario,
-        "nombre": nombre,
-        "deposito": respuesta.get("Deposito", respuesta.get("deposito", "")),
+        "pendientes": [],  # Vacío - se cargará por AJAX
+        "empresa_nombre": datos_conexion.get('nombre', 'EmpresaDefault'),
+        "usuario": usuario_cookie,
+        "nombre": request.COOKIES.get('user_nombre', usuario_cookie),
+        "deposito": "Cargando...",  # Se actualizará por AJAX
         "error": False,
     })
 
@@ -402,7 +344,12 @@ def controlPendientes_view(request):
         }, status=401)
 
     pendientes = respuesta_pendientes.get("pendientes", [])
-    return JsonResponse({"pendientes": pendientes}, status=200)
+    deposito = respuesta_pendientes.get("deposito", "")
+
+    return JsonResponse({
+        "pendientes": pendientes,
+        "deposito": deposito
+    }, status=200)
 
 
 @csrf_exempt

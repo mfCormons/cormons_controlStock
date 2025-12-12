@@ -433,6 +433,17 @@
     window.mostrarErrorConRedirect = mostrarErrorConRedirect;
 
     console.log('✅ controlStock.js inicializado (adaptado)');
+
+    // CARGA INICIAL AUTOMÁTICA (como buscador)
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🚀 DOMContentLoaded - Iniciando carga de pendientes...');
+        // Llamar a actualizarPendientes automáticamente al cargar
+        setTimeout(() => {
+            if (window.actualizarPendientes) {
+                window.actualizarPendientes();
+            }
+        }, 100);
+    });
 })();
 
 function actualizarPendientes() {

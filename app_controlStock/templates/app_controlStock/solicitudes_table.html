@@ -59,7 +59,10 @@
     </div>
   {% else %}
     <div class="card-body p-4 text-center">
-      <div class="alert alert-info mb-0">No hay solicitudes pendientes</div>
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="mt-2 mb-0">Cargando pendientes...</p>
     </div>
   {% endif %}
 </div>
