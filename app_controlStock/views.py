@@ -289,74 +289,58 @@ def controlStock_view(request):
 
     print(f"✅ Token y datos OK - verificando con VFP...")
 
-    # 2) OPTIMIZACIÓN: Usar la misma conexión para verificar token y obtener pendientes
-    # Esto evita el delay de 3s en el segundo connect()
-    from .tcp_client import enviar_consulta_tcp_batch
+    # 2) OPTIMIZACIÓN: Ejecutar ambas llamadas TCP en PARALELO
+    # VFP cierra la conexión tras cada respuesta, así que no podemos reutilizar el socket
+    # Pero SÍ podemos hacer ambas llamadas al mismo tiempo
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from .tcp_client import enviar_consulta_tcp
+    import json as json_lib
 
-    t_batch_start = time.perf_counter()
+    t_parallel_start = time.perf_counter()
 
-    # Enviar ambas consultas en batch (reutilizando conexión)
-    resultados_batch = enviar_consulta_tcp_batch([
-        {
+    def llamada_verificar_token():
+        mensaje = {
             "Comando": "verificarToken",
             "Token": token,
             "Vista": "CONTROLSTOCK",
             "Version": APP_VERSION
-        },
-        {
-            "Comando": "controlPendientes",
-            "Token": token,
-            "Vista": "CONTROLSTOCK",
-            "usrActivo": usuario_cookie
         }
-    ], request)
+        return comando_verificarToken(token, request)
 
-    t_batch_end = time.perf_counter()
-    logger.info(f"📡 Batch (verificar + pendientes) duración: {t_batch_end - t_batch_start:.3f}s")
+    def llamada_control_pendientes():
+        return comando_controlPendientes(token, request, usrActivo=usuario_cookie)
 
-    if not resultados_batch or len(resultados_batch) < 2:
-        return renderizar_error(request, "Error de comunicación con el servidor", empresa_nombre, redirect_to='https://login.cormons.app/', redirect_delay=5)
+    # Ejecutar AMBAS llamadas en paralelo
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future_verificar = executor.submit(llamada_verificar_token)
+        future_pendientes = executor.submit(llamada_control_pendientes)
 
-    # Procesar resultado de verificarToken
-    verificarToken = resultados_batch[0]
+        # Esperar resultados
+        verificarToken = future_verificar.result()
+        respuesta = future_pendientes.result()
 
-    # Normalizar respuesta de verificarToken (VFP devuelve "Estado" con mayúscula)
-    estado_raw = verificarToken.get("Estado", verificarToken.get("estado"))
-    if isinstance(estado_raw, bool):
-        verificarToken["estado"] = estado_raw
-    else:
-        verificarToken["estado"] = str(estado_raw).upper() in ("T", "TRUE", "1", "OK")
+    t_parallel_end = time.perf_counter()
+    logger.info(f"📡 Llamadas PARALELAS (verificar + pendientes) duración: {t_parallel_end - t_parallel_start:.3f}s")
 
-    if not verificarToken.get("estado"):
-        mensaje = verificarToken.get("Mensaje", verificarToken.get("mensaje", "Token inválido"))
+    # Validar verificarToken
+    if not verificarToken or not verificarToken.get("estado"):
+        mensaje = verificarToken.get("mensaje", "Token inválido") if verificarToken else "Error de conexión"
         request.session.flush()
         return renderizar_error(request, mensaje, empresa_nombre, redirect_to='https://login.cormons.app/', redirect_delay=5)
 
-    usuario = verificarToken.get("usuario", verificarToken.get("Usuario", ""))
-    nombre = verificarToken.get("nombre", verificarToken.get("Nombre", ""))
+    usuario = verificarToken.get("usuario", "")
+    nombre = verificarToken.get("nombre", "")
     request.session['usuario'] = usuario
     request.session['nombre'] = nombre
     print(f"✅ Usuario verificado: {usuario}")
 
-    # Procesar resultado de controlPendientes
-    respuesta = resultados_batch[1]
-    logger.info(f"📡 Respuesta batch completada")
+    # Validar controlPendientes
     if not respuesta:
         return renderizar_error(request, "Error al obtener stock pendientes", empresa_nombre)
 
-    # Normalizar 'Estado' a booleano (VFP puede devolver "T"/"F" en lugar de True/False)
-    estado_raw = respuesta.get("Estado", respuesta.get("estado"))
-    if isinstance(estado_raw, bool):
-        respuesta["estado"] = estado_raw
-    else:
-        respuesta["estado"] = str(estado_raw).upper() in ("T", "TRUE", "1", "OK")
-
-    # Verificar si VFP respondió con error
     if respuesta.get("estado") is False:
-        mensaje = respuesta.get("Mensaje", respuesta.get("mensaje", "Error al obtener stock pendientes"))
-        # Limpiar sesión
+        mensaje = respuesta.get("mensaje", "Error al obtener stock pendientes")
         request.session.flush()
-        # Mostrar error y redirigir después de 5 segundos
         return renderizar_error(request, mensaje, empresa_nombre, redirect_to='https://login.cormons.app/', redirect_delay=5)
 
     # 4) Normalizar productos
@@ -370,7 +354,7 @@ def controlStock_view(request):
 
     # 5) Render
     t_view_end = time.perf_counter()
-    logger.info(f"✅ CONTROL STOCK VIEW OPTIMIZADO (batch) total duration: {t_view_end - t_view_start:.3f}s")
+    logger.info(f"✅ CONTROL STOCK VIEW OPTIMIZADO (paralelo) total duration: {t_view_end - t_view_start:.3f}s")
     return render(request, "app_controlStock/controlStock.html", {
         "pendientes": pendientes,
         "empresa_nombre": empresa_nombre,
