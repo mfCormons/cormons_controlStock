@@ -51,7 +51,7 @@ def enviar_consulta_tcp(mensaje_dict, request=None, ip_custom=None, puerto_custo
         if not host or not port:
             return {"estado": False, "mensaje": "No hay cliente configurado"}
 
-    logger.info(f"Conectando a {host}:{port} ...")
+    logger.warning(f"Conectando a {host}:{port} ...")
     t_start = time.perf_counter()
 
     try:
@@ -80,7 +80,13 @@ def enviar_consulta_tcp(mensaje_dict, request=None, ip_custom=None, puerto_custo
             elapsed_total = t_recv - t_start
             elapsed_connect = t_connect_end - t_connect_start
             elapsed_send_to_recv = t_recv - t_sent
-            logger.info(f"TCP timings: connect={elapsed_connect:.3f}s send_to_recv={elapsed_send_to_recv:.3f}s total={elapsed_total:.3f}s")
+            # Elevar a WARNING para que sea visible en journalctl por defecto
+            logger.warning(f"TCP timings: connect={elapsed_connect:.3f}s send_to_recv={elapsed_send_to_recv:.3f}s total={elapsed_total:.3f}s")
+            # También imprimir a stdout con prefijo claro por si el logger no aparece
+            try:
+                print(f"TCP_TIMING: connect={elapsed_connect:.3f}s send_to_recv={elapsed_send_to_recv:.3f}s total={elapsed_total:.3f}s")
+            except Exception:
+                pass
 
             try:
                 return json.loads(respuesta_desencriptada)
