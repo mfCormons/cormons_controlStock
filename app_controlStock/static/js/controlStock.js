@@ -3,6 +3,16 @@
 (function() {
     console.log("🔐 INICIANDO CONTROL STOCK JS (adaptado)");
 
+    // ⏱️ MEDICIÓN DE PERFORMANCE
+    window.controlStockPerf = {
+        inicio: performance.now(),
+        htmlCargado: null,
+        primerAjaxInicio: null,
+        primerAjaxFin: null,
+        datosVisibles: null
+    };
+    console.log(`⏱️ [PERF] Script iniciado en: ${window.controlStockPerf.inicio.toFixed(2)}ms desde navigationStart`);
+
     // Variables/elementos principales
     let solicitudSeleccionada = null;
     let modalControl = null;
@@ -427,15 +437,22 @@
 
 function actualizarPendientes() {
     console.log('🔄 Actualizando pendientes...');
-    
+
+    // ⏱️ Marcar inicio de AJAX
+    if (!window.controlStockPerf.primerAjaxInicio) {
+        window.controlStockPerf.primerAjaxInicio = performance.now();
+        console.log(`⏱️ [PERF] Primera llamada AJAX iniciada en: ${window.controlStockPerf.primerAjaxInicio.toFixed(2)}ms`);
+    }
+    const ajaxInicio = performance.now();
+
     const btnActualizar = document.getElementById('btn-actualizar');
     const container = document.getElementById('solicitudes-container');
-    
+
     if (btnActualizar) {
         btnActualizar.disabled = true;
         btnActualizar.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Actualizando...';
     }
-    
+
     if (container) {
         container.innerHTML = `
             <div class="card-body p-4 text-center">
@@ -446,7 +463,7 @@ function actualizarPendientes() {
             </div>
         `;
     }
-    
+
     fetch('/pendientes/', {
         method: 'GET',
         credentials: 'same-origin',
@@ -473,7 +490,17 @@ function actualizarPendientes() {
         return resp.json();
     })
     .then(data => {
+        const ajaxFin = performance.now();
+        const duracionAjax = ajaxFin - ajaxInicio;
+
+        // ⏱️ Marcar fin de primera llamada AJAX
+        if (!window.controlStockPerf.primerAjaxFin) {
+            window.controlStockPerf.primerAjaxFin = ajaxFin;
+            console.log(`⏱️ [PERF] Primera llamada AJAX completada en: ${window.controlStockPerf.primerAjaxFin.toFixed(2)}ms (duración: ${duracionAjax.toFixed(2)}ms)`);
+        }
+
         console.log('📡 Pendientes actualizados:', data);
+        console.log(`⏱️ [PERF] AJAX actual duró: ${duracionAjax.toFixed(2)}ms`);
 
         if (data.error) {
             mostrarError(data.error);
@@ -481,6 +508,16 @@ function actualizarPendientes() {
         }
 
         renderizarPendientes(data.pendientes || []);
+
+        // ⏱️ Marcar datos visibles
+        if (!window.controlStockPerf.datosVisibles) {
+            window.controlStockPerf.datosVisibles = performance.now();
+            console.log(`⏱️ [PERF] Datos visibles en pantalla: ${window.controlStockPerf.datosVisibles.toFixed(2)}ms`);
+            console.log(`⏱️ [PERF] ========== RESUMEN ==========`);
+            console.log(`⏱️ [PERF] Tiempo total (desde navigationStart): ${window.controlStockPerf.datosVisibles.toFixed(2)}ms`);
+            console.log(`⏱️ [PERF] Duración AJAX: ${duracionAjax.toFixed(2)}ms`);
+            console.log(`⏱️ [PERF] ================================`);
+        }
     })
     .catch(err => {
         console.error('❌ Error al actualizar pendientes:', err);

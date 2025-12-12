@@ -345,6 +345,14 @@
     <!-- Cargar el script principal -->
     <script src="{% static 'js/controlStock.js' %}"></script>
     <script>
+        // ⏱️ MEDICIÓN DE PERFORMANCE - HTML Cargado
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.controlStockPerf) {
+                window.controlStockPerf.htmlCargado = performance.now();
+                console.log(`⏱️ [PERF] DOMContentLoaded disparado en: ${window.controlStockPerf.htmlCargado.toFixed(2)}ms`);
+            }
+        });
+
         console.log('🔍 DEBUG INICIAL:');
         console.log('Token:', localStorage.getItem('authToken') ? 'Existe ✅' : 'NO existe ❌');
         console.log('Sesión activa:', localStorage.getItem('sesion_activa'));
