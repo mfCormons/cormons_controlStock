@@ -29,6 +29,7 @@ def formatear_fecha(fecha_str):
 
     # Intentar parsear diferentes formatos comunes
     formatos = [
+        "%Y%m%d",             # 20251212 (formato compacto sin separadores - VFP)
         "%Y-%m-%d",           # 2024-12-01
         "%Y-%m-%dT%H:%M:%S",  # 2024-12-01T14:30:00
         "%Y/%m/%d",           # 2024/12/01
