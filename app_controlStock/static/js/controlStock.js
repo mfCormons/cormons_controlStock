@@ -65,62 +65,75 @@
     }
 
     // Función helper para mostrar alertas
+    // - Para 'success' e 'info' muestra notificaciones no bloqueantes (toasts)
+    // - Para 'error' y 'warning' mantiene el modal bloqueante existente
     function mostrarAlerta(mensaje, tipo = 'info') {
+        const useToast = (tipo === 'success' || tipo === 'info');
+
+        if (useToast) {
+            // Crear contenedor de toasts si no existe
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.style.position = 'fixed';
+                container.style.top = '1rem';
+                container.style.right = '1rem';
+                container.style.zIndex = 11000;
+                container.style.display = 'flex';
+                container.style.flexDirection = 'column';
+                container.style.gap = '0.5rem';
+                document.body.appendChild(container);
+            }
+
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${tipo === 'success' ? 'success' : 'info'} shadow-sm`;
+            alertDiv.style.minWidth = '240px';
+            alertDiv.style.maxWidth = '360px';
+            alertDiv.style.borderRadius = '6px';
+            alertDiv.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)';
+            alertDiv.innerHTML = `
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="flex:1;font-size:0.95rem;">${mensaje}</div>
+                    <button type="button" aria-label="cerrar" style="background:none;border:none;font-size:1rem;" class="btn-close"></button>
+                </div>
+            `;
+
+            const btnClose = alertDiv.querySelector('.btn-close');
+            btnClose.addEventListener('click', () => {
+                if (alertDiv && alertDiv.parentNode) alertDiv.parentNode.removeChild(alertDiv);
+            });
+
+            container.appendChild(alertDiv);
+
+            // Auto-dismiss
+            const timeout = tipo === 'success' ? 3000 : 5000;
+            setTimeout(() => {
+                if (alertDiv && alertDiv.parentNode) alertDiv.parentNode.removeChild(alertDiv);
+            }, timeout);
+            return;
+        }
+
+        // Para errores/advertencias usar modal existente
         const header = document.getElementById('modal-alerta-header');
         const titulo = document.getElementById('modal-alerta-titulo');
         const icono = document.getElementById('modal-alerta-icono');
         const mensajeEl = document.getElementById('modal-alerta-mensaje');
         const btnClose = header ? header.querySelector('.btn-close') : null;
-        
-        // Configurar colores según tipo
+
         const configs = {
-            'error': {
-                headerClass: 'bg-danger text-white',
-                titulo: 'Error',
-                icono: 'fa-times-circle text-danger'
-            },
-            'warning': {
-                headerClass: 'bg-warning text-dark',
-                titulo: 'Advertencia',
-                icono: 'fa-exclamation-triangle text-warning'
-            },
-            'success': {
-                headerClass: 'bg-success text-white',
-                titulo: 'Éxito',
-                icono: 'fa-check-circle text-success'
-            },
-            'info': {
-                headerClass: 'bg-primary text-white',
-                titulo: 'Información',
-                icono: 'fa-info-circle text-primary'
-            }
+            'error': { headerClass: 'bg-danger text-white', titulo: 'Error', icono: 'fa-times-circle text-danger' },
+            'warning': { headerClass: 'bg-warning text-dark', titulo: 'Advertencia', icono: 'fa-exclamation-triangle text-warning' }
         };
-        
-        const config = configs[tipo] || configs.info;
-        
-        if (header) {
-            header.className = `modal-header ${config.headerClass}`;
-        }
-        if (titulo) {
-            titulo.innerHTML = `<i class="fas ${config.icono.split(' ')[0]} me-2"></i>${config.titulo}`;
-        }
-        if (icono) {
-            icono.className = `fas ${config.icono}`;
-            icono.style.fontSize = '3rem';
-        }
-        if (mensajeEl) {
-            mensajeEl.textContent = mensaje;
-        }
-        if (btnClose) {
-            btnClose.className = config.headerClass.includes('text-white') ? 'btn-close btn-close-white' : 'btn-close';
-        }
-        
-        if (modalAlerta) {
-            modalAlerta.show();
-        } else {
-            // Fallback
-            alert(mensaje);
-        }
+
+        const config = configs[tipo] || configs.error;
+        if (header) header.className = `modal-header ${config.headerClass}`;
+        if (titulo) titulo.innerHTML = `<i class="fas ${config.icono.split(' ')[0]} me-2"></i>${config.titulo}`;
+        if (icono) { icono.className = `fas ${config.icono}`; icono.style.fontSize = '3rem'; }
+        if (mensajeEl) mensajeEl.textContent = mensaje;
+        if (btnClose) btnClose.className = config.headerClass.includes('text-white') ? 'btn-close btn-close-white' : 'btn-close';
+
+        if (modalAlerta) modalAlerta.show(); else alert(mensaje);
     }
 
     function abrirModalControl(solicitud) {
