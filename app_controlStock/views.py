@@ -335,6 +335,7 @@ def controlStock_view(request):
         "usuario": usuario,
         "nombre": nombre,
         "deposito": respuesta.get("deposito", ""),
+        "error": False,
     })
 
 
