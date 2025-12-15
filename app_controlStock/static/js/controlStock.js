@@ -217,7 +217,14 @@
         }
 
         // Mostrar modal de confirmación
-        const mensajeConfirm = `¿Está seguro que desea registrar ${cantidadContada} unidades para el código ${solicitudSeleccionada.codigo || solicitudSeleccionada.codigo_producto || ''}?`;
+        const codigo = solicitudSeleccionada.codigo || solicitudSeleccionada.codigo_producto || '';
+        const descripcion = solicitudSeleccionada.descripcion || '';
+
+        // Obtener depósito del header
+        const depositoEl = document.getElementById('deposito-info') || document.getElementById('deposito-info-desktop');
+        const deposito = depositoEl ? depositoEl.textContent.trim() : '';
+
+        const mensajeConfirm = `¿Está seguro que desea registrar ${cantidadContada} unidades?\n\n${descripcion}${codigo ? ' (' + codigo + ')' : ''}${deposito ? '\nDepósito: ' + deposito : ''}`;
         document.getElementById('confirmar-mensaje').textContent = mensajeConfirm;
         
         if (modalConfirmarRegistro) {
