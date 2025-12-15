@@ -342,6 +342,16 @@
         </div>
     </div>
 
+    <!-- ⏱️ MEDICIÓN DE PERFORMANCE - Inicio de carga del HTML -->
+    <script>
+        // Capturar el momento exacto en que el navegador comienza a parsear el HTML
+        window.perfMark = {
+            htmlParseStart: performance.now(),
+            navigationStart: performance.timing ? performance.timing.navigationStart : 0
+        };
+        console.log('⏱️ [PERF-HTML] Inicio del parsing HTML:', window.perfMark.htmlParseStart.toFixed(2) + 'ms');
+    </script>
+
     <!-- Cargar el script principal -->
     <script src="{% static 'js/controlStock.js' %}"></script>
     <script>
@@ -350,6 +360,14 @@
             if (window.controlStockPerf) {
                 window.controlStockPerf.htmlCargado = performance.now();
                 console.log(`⏱️ [PERF] DOMContentLoaded disparado en: ${window.controlStockPerf.htmlCargado.toFixed(2)}ms`);
+            }
+        });
+
+        // ⏱️ MEDICIÓN - Cuando la página está completamente cargada (CSS, imágenes, etc.)
+        window.addEventListener('load', function() {
+            if (window.controlStockPerf) {
+                window.controlStockPerf.windowLoad = performance.now();
+                console.log(`⏱️ [PERF] window.load disparado en: ${window.controlStockPerf.windowLoad.toFixed(2)}ms`);
             }
         });
 

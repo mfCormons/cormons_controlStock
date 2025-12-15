@@ -603,3 +603,194 @@ function renderizarPendientes(pendientes) {
 }
 
 window.actualizarPendientes = actualizarPendientes;
+
+// ⏱️ FUNCIÓN DE DIAGNÓSTICO DE PERFORMANCE
+// Llama a esta función desde la consola del navegador: diagnosticarPerformance()
+window.diagnosticarPerformance = function() {
+    console.log('\n');
+    console.log('═══════════════════════════════════════════════════════════════');
+    console.log('📊 DIAGNÓSTICO DE PERFORMANCE - CONTROL STOCK');
+    console.log('═══════════════════════════════════════════════════════════════');
+    console.log('\n');
+
+    const perf = window.controlStockPerf || {};
+    const nav = performance.timing || {};
+    const perfMark = window.perfMark || {};
+
+    // ========== MÉTRICAS DEL NAVEGADOR ==========
+    console.log('🌐 MÉTRICAS DEL NAVEGADOR (desde que das clic en el link):');
+    console.log('─────────────────────────────────────────────────────────────');
+
+    if (nav.navigationStart) {
+        const navStart = nav.navigationStart;
+
+        console.log(`   • Request iniciado:           ${(nav.requestStart - navStart)}ms`);
+        console.log(`   • Response iniciado:          ${(nav.responseStart - navStart)}ms`);
+        console.log(`   • Response completado:        ${(nav.responseEnd - navStart)}ms`);
+        console.log(`   • DOM interactivo:            ${(nav.domInteractive - navStart)}ms`);
+        console.log(`   • DOM completado:             ${(nav.domComplete - navStart)}ms`);
+        console.log(`   • Página cargada (load):      ${(nav.loadEventEnd - navStart)}ms`);
+
+        console.log('\n   🔍 ANÁLISIS:');
+        const networkTime = nav.responseEnd - nav.requestStart;
+        const serverTime = nav.responseStart - nav.requestStart;
+        const downloadTime = nav.responseEnd - nav.responseStart;
+        const domProcessing = nav.domComplete - nav.responseEnd;
+
+        console.log(`   • Tiempo de red total:        ${networkTime}ms (request + response)`);
+        console.log(`   • Tiempo del servidor:        ${serverTime}ms`);
+        console.log(`   • Tiempo de descarga HTML:    ${downloadTime}ms`);
+        console.log(`   • Procesamiento DOM:          ${domProcessing}ms`);
+    } else {
+        console.log('   ⚠️ performance.timing no disponible');
+    }
+
+    console.log('\n');
+
+    // ========== MÉTRICAS DE TU CÓDIGO ==========
+    console.log('⚙️ MÉTRICAS DE TU CÓDIGO JAVASCRIPT:');
+    console.log('─────────────────────────────────────────────────────────────');
+
+    if (perfMark.htmlParseStart) {
+        console.log(`   • HTML comenzó a parsearse:   ${perfMark.htmlParseStart.toFixed(2)}ms`);
+    }
+
+    if (perf.inicio) {
+        console.log(`   • controlStock.js iniciado:   ${perf.inicio.toFixed(2)}ms`);
+    }
+
+    if (perf.htmlCargado) {
+        console.log(`   • DOMContentLoaded:           ${perf.htmlCargado.toFixed(2)}ms`);
+    }
+
+    if (perf.windowLoad) {
+        console.log(`   • window.load:                ${perf.windowLoad.toFixed(2)}ms`);
+    }
+
+    if (perf.primerAjaxInicio) {
+        console.log(`   • Primera llamada AJAX inicio: ${perf.primerAjaxInicio.toFixed(2)}ms`);
+    }
+
+    if (perf.primerAjaxFin) {
+        console.log(`   • Primera llamada AJAX fin:    ${perf.primerAjaxFin.toFixed(2)}ms`);
+        if (perf.primerAjaxInicio) {
+            const duracionAjax = perf.primerAjaxFin - perf.primerAjaxInicio;
+            console.log(`   • Duración de AJAX:           ${duracionAjax.toFixed(2)}ms`);
+        }
+    }
+
+    if (perf.datosVisibles) {
+        console.log(`   • Datos visibles en pantalla:  ${perf.datosVisibles.toFixed(2)}ms`);
+    }
+
+    console.log('\n');
+
+    // ========== DESGLOSE DETALLADO ==========
+    console.log('📈 DESGLOSE DETALLADO (tiempo entre eventos):');
+    console.log('─────────────────────────────────────────────────────────────');
+
+    if (perf.inicio && perfMark.htmlParseStart) {
+        console.log(`   • HTML parse → JS iniciado:    ${(perf.inicio - perfMark.htmlParseStart).toFixed(2)}ms`);
+    }
+
+    if (perf.htmlCargado && perf.inicio) {
+        console.log(`   • JS iniciado → DOMContentLoaded: ${(perf.htmlCargado - perf.inicio).toFixed(2)}ms`);
+    }
+
+    if (perf.primerAjaxInicio && perf.htmlCargado) {
+        console.log(`   • DOMContentLoaded → AJAX:     ${(perf.primerAjaxInicio - perf.htmlCargado).toFixed(2)}ms`);
+    }
+
+    if (perf.datosVisibles && perf.primerAjaxFin) {
+        console.log(`   • AJAX fin → Datos visibles:   ${(perf.datosVisibles - perf.primerAjaxFin).toFixed(2)}ms`);
+    }
+
+    console.log('\n');
+
+    // ========== TIEMPO TOTAL ==========
+    console.log('⏱️  TIEMPO TOTAL (desde que diste clic):');
+    console.log('─────────────────────────────────────────────────────────────');
+
+    if (perf.datosVisibles) {
+        console.log(`   🎯 ${perf.datosVisibles.toFixed(2)}ms hasta que viste los datos`);
+    } else if (perf.primerAjaxFin) {
+        console.log(`   ⚠️ ${perf.primerAjaxFin.toFixed(2)}ms (datos aún no visibles)`);
+    } else if (perf.htmlCargado) {
+        console.log(`   ⚠️ ${perf.htmlCargado.toFixed(2)}ms (AJAX aún no completado)`);
+    } else {
+        console.log(`   ⚠️ Medición incompleta`);
+    }
+
+    console.log('\n');
+
+    // ========== DIAGNÓSTICO ==========
+    console.log('🔬 DIAGNÓSTICO Y RECOMENDACIONES:');
+    console.log('─────────────────────────────────────────────────────────────');
+
+    if (nav.navigationStart && nav.responseStart) {
+        const serverTime = nav.responseStart - nav.requestStart;
+        if (serverTime > 1000) {
+            console.log(`   ⚠️ PROBLEMA: El servidor tarda ${serverTime}ms en responder`);
+            console.log('   💡 CAUSA: Probable lentitud en el backend Django/VFP');
+            console.log('   ✅ SOLUCIÓN: Optimizar queries de base de datos o lógica del servidor');
+        } else if (serverTime > 500) {
+            console.log(`   ⚠️ El servidor tarda ${serverTime}ms (mejorable)`);
+        } else {
+            console.log(`   ✅ Tiempo del servidor OK (${serverTime}ms)`);
+        }
+    }
+
+    if (nav.navigationStart && nav.responseEnd) {
+        const downloadTime = nav.responseEnd - nav.responseStart;
+        if (downloadTime > 500) {
+            console.log(`   ⚠️ PROBLEMA: Descarga del HTML tarda ${downloadTime}ms`);
+            console.log('   💡 CAUSA: Conexión lenta o HTML muy grande');
+            console.log('   ✅ SOLUCIÓN: Comprimir HTML, optimizar red, o CDN');
+        } else {
+            console.log(`   ✅ Descarga del HTML OK (${downloadTime}ms)`);
+        }
+    }
+
+    if (perf.primerAjaxInicio && perf.primerAjaxFin) {
+        const ajaxDuration = perf.primerAjaxFin - perf.primerAjaxInicio;
+        if (ajaxDuration > 2000) {
+            console.log(`   ⚠️ PROBLEMA: La llamada AJAX tarda ${ajaxDuration.toFixed(2)}ms`);
+            console.log('   💡 CAUSA: El endpoint /pendientes/ es lento');
+            console.log('   ✅ SOLUCIÓN: Optimizar consultas en el backend');
+        } else if (ajaxDuration > 1000) {
+            console.log(`   ⚠️ La llamada AJAX tarda ${ajaxDuration.toFixed(2)}ms (mejorable)`);
+        } else {
+            console.log(`   ✅ Llamada AJAX OK (${ajaxDuration.toFixed(2)}ms)`);
+        }
+    }
+
+    if (perf.htmlCargado && perf.inicio) {
+        const jsInit = perf.htmlCargado - perf.inicio;
+        if (jsInit > 500) {
+            console.log(`   ⚠️ PROBLEMA: Inicialización JS tarda ${jsInit.toFixed(2)}ms`);
+            console.log('   💡 CAUSA: Código JavaScript muy pesado o complejo');
+            console.log('   ✅ SOLUCIÓN: Minimizar JS, lazy loading, o code splitting');
+        } else {
+            console.log(`   ✅ Inicialización JS OK (${jsInit.toFixed(2)}ms)`);
+        }
+    }
+
+    console.log('\n');
+    console.log('═══════════════════════════════════════════════════════════════');
+    console.log('💡 Para volver a ejecutar este diagnóstico, escribe:');
+    console.log('   diagnosticarPerformance()');
+    console.log('═══════════════════════════════════════════════════════════════');
+    console.log('\n');
+};
+
+// Ejecutar diagnóstico automáticamente cuando los datos estén visibles
+if (window.controlStockPerf) {
+    const checkDatosVisibles = setInterval(() => {
+        if (window.controlStockPerf.datosVisibles) {
+            clearInterval(checkDatosVisibles);
+            setTimeout(() => {
+                console.log('\n💡 TIP: Ejecuta diagnosticarPerformance() para ver el análisis completo');
+            }, 500);
+        }
+    }, 100);
+}
