@@ -96,7 +96,40 @@
                 <p class="text-muted">Redirigiendo al login...</p>
             </div>
             {% else %}
-            <div class="container" style="max-width: 800px;">
+
+            <!-- ⏳ PANTALLA DE CARGA INICIAL (se muestra inmediatamente) -->
+            <div id="initial-loader" class="container text-center" style="max-width: 800px; margin-top: 80px;">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-5">
+                        <!-- Spinner animado -->
+                        <div class="mb-4">
+                            <div class="spinner-border text-success" role="status" style="width: 4rem; height: 4rem; border-width: 0.3rem;">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                        </div>
+
+                        <!-- Mensaje -->
+                        <h4 class="text-success mb-3">
+                            <i class="fas fa-clipboard-check me-2"></i>
+                            Control de Stock
+                        </h4>
+                        <p class="text-muted mb-2">Cargando solicitudes pendientes...</p>
+                        <small class="text-muted">Por favor espere un momento</small>
+
+                        <!-- Skeleton opcional (simula las tarjetas que vendrán) -->
+                        <div class="mt-4">
+                            <div class="placeholder-glow">
+                                <div class="placeholder col-12 mb-2 rounded" style="height: 50px; background-color: #e9ecef;"></div>
+                                <div class="placeholder col-10 mb-2 rounded" style="height: 50px; background-color: #e9ecef;"></div>
+                                <div class="placeholder col-11 mb-2 rounded" style="height: 50px; background-color: #e9ecef;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 📋 CONTENIDO REAL (oculto inicialmente) -->
+            <div id="main-content" class="container" style="max-width: 800px; display: none;">
 
                 <!-- Card principal con Depósito -->
                 <section class="card shadow-sm mb-4">
@@ -141,7 +174,8 @@
                 <section id="solicitudes-container" class="card shadow-sm mb-4">
                     {% include 'app_controlStock/solicitudes_table.html' %}
                 </section>
-            </div>
+
+            </div><!-- /main-content -->
             {% endif %}
         </main>
 

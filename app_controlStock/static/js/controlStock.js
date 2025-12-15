@@ -500,13 +500,21 @@ function actualizarPendientes() {
 function renderizarPendientes(pendientes) {
     const container = document.getElementById('solicitudes-container');
     if (!container) return;
-    
+
     if (!pendientes || pendientes.length === 0) {
         container.innerHTML = `
             <div class="card-body p-4 text-center">
                 <div class="alert alert-info mb-0">No hay solicitudes pendientes</div>
             </div>
         `;
+
+        // 🎯 Ocultar loader inicial y mostrar contenido real (también cuando no hay datos)
+        const loader = document.getElementById('initial-loader');
+        const mainContent = document.getElementById('main-content');
+        if (loader && mainContent) {
+            loader.style.display = 'none';
+            mainContent.style.display = 'block';
+        }
         return;
     }
     
@@ -550,8 +558,17 @@ function renderizarPendientes(pendientes) {
             </div>
         </div>
     `;
-    
+
     container.innerHTML = html;
+
+    // 🎯 Ocultar loader inicial y mostrar contenido real
+    const loader = document.getElementById('initial-loader');
+    const mainContent = document.getElementById('main-content');
+
+    if (loader && mainContent) {
+        loader.style.display = 'none';
+        mainContent.style.display = 'block';
+    }
 }
 
 window.actualizarPendientes = actualizarPendientes;
