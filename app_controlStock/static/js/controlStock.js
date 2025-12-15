@@ -278,20 +278,21 @@
             credentials: 'same-origin'
         })
         .then(resp => {
-            // Si es 401, parsear el JSON para obtener el redirect
+            // Si es 401, parsear el JSON para obtener el redirect y mensaje de VFP
             if (resp.status === 401) {
                 return resp.json().then(data => {
-                    console.log('🚫 Sesión inválida - mostrando modal de error');
+                    console.log('🚫 Sesión inválida - mostrando modal de error con mensaje de VFP');
                     const redirectUrl = data.redirect || 'https://login.cormons.app/';
-                    const mensaje = data.error || 'Su sesión ha expirado o no es válida';
+                    // SIEMPRE usar el mensaje de VFP (data.error)
+                    const mensaje = data.error || data.mensaje || 'Error de autenticación';
 
                     // Cerrar modal de control si está abierto
                     if (modalControl) {
                         modalControl.hide();
                     }
 
-                    // Mostrar modal de error bloqueante
-                    window.mostrarErrorConRedirect(mensaje, redirectUrl, 5);
+                    // Mostrar modal de error bloqueante (sin countdown)
+                    window.mostrarErrorConRedirect(mensaje, redirectUrl);
                     throw new Error('Sesión inválida');
                 });
             }
@@ -305,7 +306,8 @@
                 if (modalControl) {
                     modalControl.hide();
                 }
-                mostrarAlerta(data.mensaje || 'Control registrado correctamente', 'success');
+                // SIEMPRE usar mensaje de VFP para éxito
+                mostrarAlerta(data.mensaje || 'Operación exitosa', 'success');
                 // Restaurar botón confirmar si quedó con spinner
                 if (btnConfirmar) {
                     try {
@@ -316,7 +318,8 @@
                 }
                 solicitudSeleccionada = null;
             } else {
-                mostrarAlerta(data.mensaje || 'Error al registrar control', 'error');
+                // SIEMPRE usar mensaje de VFP para error
+                mostrarAlerta(data.mensaje || 'Error en la operación', 'error');
                 if (btnConfirmar) {
                     btnConfirmar.disabled = false;
                     btnConfirmar.innerHTML = textoOriginal;
@@ -327,7 +330,8 @@
             console.error('❌ Error registrar control:', err);
             // No mostrar alerta si ya estamos redirigiendo
             if (err.message !== 'Sesión inválida') {
-                mostrarAlerta('Error al registrar control. Intente nuevamente.', 'error');
+                // Error de red o servidor - mostrar error genérico
+                mostrarAlerta('Error de comunicación. Intente nuevamente.', 'error');
             }
             if (btnConfirmar && err.message !== 'Sesión inválida') {
                 btnConfirmar.disabled = false;
@@ -375,10 +379,11 @@
     }
 
     // Función para mostrar modal de error con redirección (bloquea interacción)
-    function mostrarErrorConRedirect(mensaje, redirectUrl, delay = 5) {
+    // SIN countdown - usuario debe hacer click para continuar
+    function mostrarErrorConRedirect(mensaje, redirectUrl) {
         const modalElement = document.getElementById('modalErrorRedirect');
         const mensajeEl = document.getElementById('modal-error-mensaje');
-        const countdownEl = document.getElementById('modal-countdown');
+        const countdownContainer = document.getElementById('modal-countdown-container');
         const btnRedirect = document.getElementById('btn-redirect-now');
 
         if (!modalElement || !window.bootstrap) {
@@ -388,9 +393,13 @@
             return;
         }
 
-        // Configurar mensaje
+        // Configurar mensaje (siempre usar el mensaje de VFP)
         if (mensajeEl) mensajeEl.textContent = mensaje;
-        if (countdownEl) countdownEl.textContent = delay;
+
+        // Ocultar el countdown (no se usa más - usuario debe hacer click)
+        if (countdownContainer) {
+            countdownContainer.style.display = 'none';
+        }
 
         // Crear modal con opciones de bloqueo
         const modal = new bootstrap.Modal(modalElement, {
@@ -398,21 +407,9 @@
             keyboard: false
         });
 
-        // Countdown
-        let segundos = delay;
-        const interval = setInterval(() => {
-            segundos--;
-            if (countdownEl) countdownEl.textContent = segundos;
-            if (segundos <= 0) {
-                clearInterval(interval);
-                window.location.href = redirectUrl;
-            }
-        }, 1000);
-
-        // Botón para ir inmediatamente
+        // Botón para ir al login (usuario debe hacer click)
         if (btnRedirect) {
             btnRedirect.onclick = function() {
-                clearInterval(interval);
                 window.location.href = redirectUrl;
             };
         }
@@ -462,15 +459,16 @@ function actualizarPendientes() {
         }
     })
     .then(resp => {
-        // Si es 401, parsear el JSON para obtener el redirect
+        // Si es 401, parsear el JSON para obtener el redirect y mensaje de VFP
         if (resp.status === 401) {
             return resp.json().then(data => {
-                console.log('🚫 Sesión inválida - mostrando modal de error');
+                console.log('🚫 Sesión inválida - mostrando modal de error con mensaje de VFP');
                 const redirectUrl = data.redirect || 'https://login.cormons.app/';
-                const mensaje = data.error || 'Su sesión ha expirado o no es válida';
+                // SIEMPRE usar el mensaje de VFP (data.error)
+                const mensaje = data.error || data.mensaje || 'Error de autenticación';
 
-                // Mostrar modal de error bloqueante
-                window.mostrarErrorConRedirect(mensaje, redirectUrl, 5);
+                // Mostrar modal de error bloqueante (sin countdown)
+                window.mostrarErrorConRedirect(mensaje, redirectUrl);
                 throw new Error('Sesión inválida');
             });
         }
@@ -482,7 +480,9 @@ function actualizarPendientes() {
     .then(data => {
         console.log('📡 Pendientes actualizados:', data);
 
+        // Si VFP devolvió error, mostrarlo
         if (data.error) {
+            // Usar mensaje de VFP
             mostrarError(data.error);
             return;
         }
@@ -493,7 +493,7 @@ function actualizarPendientes() {
         console.error('❌ Error al actualizar pendientes:', err);
         // No mostrar error si ya estamos redirigiendo
         if (err.message !== 'Sesión inválida') {
-            mostrarError('Error al actualizar pendientes. Intente nuevamente.');
+            mostrarError('Error de comunicación. Intente nuevamente.');
         }
     })
     .finally(() => {

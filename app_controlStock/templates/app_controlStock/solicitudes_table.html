@@ -8,18 +8,19 @@
           const config = document.getElementById('redirect-config');
           if (!config) return;
 
+          // SIEMPRE usar el mensaje de VFP (no mensaje por defecto)
           const mensaje = config.dataset.mensaje || 'Error al cargar la aplicación';
           const redirectUrl = config.dataset.url;
-          const delay = parseInt(config.dataset.delay) || 5;
 
           // Esperar a que el DOM esté completamente cargado
           if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function() {
-              window.mostrarErrorConRedirect(mensaje, redirectUrl, delay);
+              // Sin countdown - usuario debe hacer click
+              window.mostrarErrorConRedirect(mensaje, redirectUrl);
             });
           } else {
-            // DOM ya está listo
-            window.mostrarErrorConRedirect(mensaje, redirectUrl, delay);
+            // DOM ya está listo - sin countdown
+            window.mostrarErrorConRedirect(mensaje, redirectUrl);
           }
         })();
       </script>
