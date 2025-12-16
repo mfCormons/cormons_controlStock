@@ -9,7 +9,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=20251215c">
     <link rel="icon" type="image/png" href="{% static 'img/favicon_cormons.png' %}">
 
     <style>
@@ -49,41 +49,21 @@
     <div class="container-fluid p-0 d-flex flex-column min-vh-100">
         <!-- Header -->
         <header class="navbar fixed-top bg-white shadow-sm">
-            <div class="container-fluid d-flex justify-content-between align-items-center flex-nowrap">
-                <div class="navbar-brand text-success fw-bold text-center flex-grow-1" style="min-width: 0;">
-                    <!-- VERSIÓN MÓVIL: 2 líneas (sin depósito) -->
-                    <div class="d-md-none">
-                        {% if not error %}
-                        <p class="mb-0" style="font-size: 0.8rem;">
-                            <span id="empresa-nombre-header" class="text-truncate d-inline-block" style="max-width: 200px; vertical-align: bottom;">{{ empresa_nombre|default:"Empresa" }}</span>
-                        </p>
-                        <p class="mb-0" style="font-size: 0.75rem;">
-                            [<span id="usuario-display">{{ usuario|default:"Usuario" }}</span>] <span id="nombre-display">{{ nombre|default:"Nombre" }}</span>
-                        </p>
-                        {% else %}
-                        <p class="mb-0" style="font-size: 0.8rem;">{{ empresa_nombre|default:"Empresa" }}</p>
-                        {% endif %}
-                    </div>
-
-                    <!-- VERSIÓN DESKTOP: 1 línea (sin depósito) -->
-                    <div class="d-none d-md-block">
-                        {% if not error %}
-                        <p class="mb-0 text-truncate" style="font-size: 0.85rem;">
-                            <span id="empresa-nombre-header-desktop" class="d-inline-block text-truncate" style="max-width: 150px; vertical-align: bottom;">{{ empresa_nombre|default:"Empresa" }}</span>
-                            [<span id="usuario-display-desktop">{{ usuario|default:"Usuario" }}</span>], <span id="nombre-display-desktop">{{ nombre|default:"Nombre" }}</span>
-                        </p>
-                        {% else %}
-                        <p class="mb-0 text-truncate" style="font-size: 0.85rem;">{{ empresa_nombre|default:"Empresa" }}</p>
-                        {% endif %}
-                    </div>
+            <div class="container-fluid">
+                <div class="navbar-brand text-primary fw-bold mx-auto">
+                    {% if not error %}
+                    <p class="mb-0">
+                        <span id="empresa-nombre-header">{{ empresa_nombre|default:"Empresa" }}</span>
+                        [<span id="usuario-display">{{ usuario|default:"Usuario" }}</span>], <span id="nombre-display">{{ nombre|default:"Nombre" }}</span>
+                    </p>
+                    {% else %}
+                    <p class="mb-0">{{ empresa_nombre|default:"Empresa" }}</p>
+                    {% endif %}
                 </div>
 
-                <a href="javascript:void(0)" onclick="cerrarSesion()"
-                    class="btn btn-danger btn-sm d-inline-flex align-items-center flex-shrink-0"
-                    style="min-width: 40px;">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span class="d-none d-sm-inline ms-1">Salir</span>
-                </a>
+                <button type="button" class="btn btn-danger btn-sm d-inline-flex align-items-center ms-2 logout-button" onclick="cerrarSesion()">
+                    <i class="fas fa-sign-out-alt me-1"></i> <span class="d-none d-sm-inline">Salir</span>
+                </button>
             </div>
         </header>
 
@@ -146,28 +126,21 @@
         </main>
 
         <!-- Footer -->
-        <footer class="bg-dark text-white py-2 mt-auto fixed-bottom">
-            <div class="container-fluid px-2">
-                <div class="d-flex justify-content-center align-items-center gap-2 gap-sm-3 flex-wrap" style="font-size: 0.85rem;">
-                    <div class="d-flex align-items-center">
-                        <img src="{% static 'img/favicon_cormons.png' %}" alt="Isologo Cormons"
-                            style="width: 30px; height: 30px; margin-right: 6px; filter: brightness(1.1);">
-                    </div>
+        <footer class="bg-dark text-white mt-auto fixed-bottom">
+            <div class="container d-flex justify-content-center align-items-center gap-4 flex-wrap">
+                <div class="d-flex align-items-center">
+                    <img src="{% static 'img/favicon_cormons.png' %}" alt="Isologo Cormons" style="width: 40px; height: 40px; margin-right: 10px; filter: brightness(1.1);">
+                </div>
 
-                    <div class="ayuda-contacto d-flex align-items-center">
-                        <a href="https://cormons.freshdesk.com/support/solutions/folders/35000248621"
-                            class="text-white text-decoration-none" style="font-size: 0.85rem;">
-                            <i class="fas fa-question-circle me-1 d-sm-none"></i>
-                            <span class="d-none d-sm-inline">Obtener ayuda</span>
-                            <span class="d-inline d-sm-none">Ayuda</span>
-                        </a>
-                    </div>
+                <div class="ayuda-contacto d-flex align-items-center">
+                    <a href="https://cormons.freshdesk.com/support/solutions/folders/35000248621" class="text-white text-decoration-none">
+                        Obtener ayuda
+                    </a>
+                </div>
 
-                    <div class="whatsapp-contacto d-flex align-items-center">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="Logo WhatsApp"
-                            style="width: 20px; height: 20px; margin-right: 4px;">
-                        <a href="https://wa.me/543586008737" target="_blank" class="text-white text-decoration-none" style="font-size: 0.85rem;">3586008737</a>
-                    </div>
+                <div class="whatsapp-contacto d-flex align-items-center">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="Logo WhatsApp" style="width: 24px; height: 24px; margin-right: 6px;">
+                    <a href="https://wa.me/543586008737" target="_blank" class="text-white text-decoration-none">3586 00 8737</a>
                 </div>
             </div>
         </footer>
@@ -343,7 +316,7 @@
     </div>
 
     <!-- Cargar el script principal -->
-    <script src="{% static 'js/controlStock.js' %}?v=20251215b"></script>
+    <script src="{% static 'js/controlStock.js' %}?v=20251215c"></script>
     <script>
         console.log('🔍 DEBUG INICIAL:');
         console.log('Token:', localStorage.getItem('authToken') ? 'Existe ✅' : 'NO existe ❌');

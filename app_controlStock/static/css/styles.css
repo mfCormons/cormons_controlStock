@@ -35,52 +35,38 @@ body {
 }
 
 /* ====================================
-   NAVBAR / NAVEGACIÓN
+   NAVBAR / HEADER
    ==================================== */
 
 .navbar {
-    background-color: var(--dark-color);
-    color: white;
-    padding: 1rem 0;
-    box-shadow: var(--shadow);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-
-.navbar-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    height: 60px;
+    z-index: 1000;
 }
 
 .navbar-brand {
-    font-size: 1.5rem;
-    font-weight: bold;
-    text-decoration: none;
-    color: white;
+    font-size: 1rem;
+    color: var(--primary-color) !important;
 }
 
-.nav-menu {
-    list-style: none;
-    display: flex;
-    gap: 2rem;
+.navbar-brand p {
+    margin: 0;
+    line-height: 1.2;
 }
 
-.nav-menu a {
-    color: white;
-    text-decoration: none;
-    transition: color 0.3s ease;
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
+.logout-button {
+    white-space: nowrap;
 }
 
-.nav-menu a:hover {
-    color: var(--primary-color);
-    background-color: rgba(255, 255, 255, 0.1);
+header {
+    height: 70px;
+    padding: 0.5rem 0;
+}
+
+@media (min-width: 768px) {
+    header {
+        height: 60px;
+        padding: 1rem 0;
+    }
 }
 
 /* ====================================
@@ -210,16 +196,39 @@ main.container {
    FOOTER
    ==================================== */
 
-.footer {
-    background-color: var(--dark-color);
+footer {
+    background-color: #1f2937;
     color: white;
-    text-align: center;
-    padding: 2rem;
-    margin-top: 4rem;
+    padding: 10px 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    font-size: 1rem;
 }
 
-.footer p {
-    margin: 0;
+footer a {
+    color: white;
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+footer a:hover {
+    opacity: 0.8;
+}
+
+footer img {
+    filter: brightness(1.1);
+}
+
+footer .container {
+    min-height: auto;
+    display: flex;
+    flex-direction: row !important;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
 }
 
 /* ====================================
@@ -334,24 +343,100 @@ textarea {
    ==================================== */
 
 @media (max-width: 768px) {
-    .navbar-container {
-        flex-direction: column;
-        gap: 1rem;
+    body {
+        padding-top: 60px;
+        padding-bottom: 55px;
     }
-    
-    .nav-menu {
-        gap: 1rem;
+
+    .navbar {
+        height: 50px;
+        padding: 5px 10px;
     }
-    
+
+    .navbar-brand {
+        font-size: 0.85rem;
+    }
+
+    .logout-button {
+        padding: 6px 12px !important;
+        font-size: 0.85rem;
+    }
+
+    .logout-button span {
+        display: none !important;
+    }
+
+    .logout-button i {
+        margin: 0 !important;
+    }
+
     .dashboard-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .welcome-section h2 {
         font-size: 1.5rem;
     }
-    
+
     main.container {
         padding: 0 1rem 3rem;
+    }
+
+    footer {
+        padding: 8px 0;
+    }
+
+    footer .container {
+        gap: 12px !important;
+        font-size: 0.75rem;
+        padding: 0 10px;
+    }
+
+    footer img[alt="Isologo Cormons"] {
+        width: 30px !important;
+        height: 30px !important;
+        margin-right: 5px !important;
+    }
+
+    footer img[alt="Logo WhatsApp"] {
+        width: 18px !important;
+        height: 18px !important;
+        margin-right: 4px !important;
+    }
+}
+
+@media (max-width: 576px) {
+    body {
+        padding-bottom: 50px;
+    }
+
+    .navbar-brand {
+        font-size: 0.75rem;
+    }
+
+    footer {
+        padding: 6px 0;
+    }
+
+    footer .container {
+        gap: 8px !important;
+        font-size: 0.7rem;
+    }
+
+    footer img[alt="Isologo Cormons"] {
+        width: 24px !important;
+        height: 24px !important;
+    }
+
+    footer img[alt="Logo WhatsApp"] {
+        width: 16px !important;
+        height: 16px !important;
+    }
+}
+
+/* Mejoras para touch devices */
+@media (hover: none) and (pointer: coarse) {
+    .btn {
+        min-height: 44px;
     }
 }
