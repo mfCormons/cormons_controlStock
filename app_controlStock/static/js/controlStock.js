@@ -479,6 +479,8 @@ function actualizarPendientes() {
     })
     .then(data => {
         console.log('📡 Pendientes actualizados:', data);
+        console.log('📦 DEBUG: data.deposito =', data.deposito);
+        console.log('📦 DEBUG: typeof data.deposito =', typeof data.deposito);
 
         // Si VFP devolvió error, mostrarlo
         if (data.error) {
@@ -488,13 +490,20 @@ function actualizarPendientes() {
         }
 
         // Actualizar depósito si viene en la respuesta
+        console.log('📦 Buscando elementos de depósito...');
+        const depositoEl = document.getElementById('deposito-info') ||
+                          document.getElementById('deposito-info-desktop');
+        console.log('📦 Elemento encontrado:', depositoEl);
+
         if (data.deposito) {
-            const depositoEl = document.getElementById('deposito-info') ||
-                              document.getElementById('deposito-info-desktop');
             if (depositoEl) {
                 depositoEl.textContent = data.deposito;
                 console.log('✅ Depósito actualizado:', data.deposito);
+            } else {
+                console.warn('⚠️ No se encontró elemento deposito-info ni deposito-info-desktop');
             }
+        } else {
+            console.warn('⚠️ data.deposito está vacío o undefined');
         }
 
         renderizarPendientes(data.pendientes || []);

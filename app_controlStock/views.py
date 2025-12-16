@@ -360,6 +360,9 @@ def controlPendientes_view(request):
     pendientes = respuesta_pendientes.get("pendientes", [])
     deposito = respuesta_pendientes.get("deposito", "")
 
+    print(f"📦 DEBUG: deposito extraído = {repr(deposito)}")
+    print(f"📦 DEBUG: respuesta_pendientes keys = {list(respuesta_pendientes.keys())}")
+
     return JsonResponse({
         "pendientes": pendientes,
         "deposito": deposito
