@@ -62,6 +62,7 @@ body {
 header {
     height: 70px;
     padding: 0.5rem 0;
+    position: relative;
 }
 
 @media (min-width: 768px) {
