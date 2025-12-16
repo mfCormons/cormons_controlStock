@@ -45,7 +45,9 @@ body {
 
 .navbar-brand {
     font-size: 1rem;
-    color: var(--primary-color) !important;
+    color: var(--success-color) !important;
+    flex: 1;
+    min-width: 0;
 }
 
 .navbar-brand p {
@@ -431,6 +433,36 @@ textarea {
     footer img[alt="Logo WhatsApp"] {
         width: 16px !important;
         height: 16px !important;
+    }
+}
+
+/* Pantallas muy pequeñas (menos de 324px) */
+@media (max-width: 324px) {
+    .navbar {
+        height: 45px;
+    }
+
+    .navbar-brand {
+        font-size: 0.65rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .navbar-brand p {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .logout-button {
+        padding: 4px 8px !important;
+        font-size: 0.75rem;
+        min-width: 32px;
+    }
+
+    .logout-button i {
+        font-size: 0.9rem;
     }
 }
 
