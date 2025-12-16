@@ -342,6 +342,23 @@
     </script>
     {% endif %}
 
+    <!-- Auto-cargar pendientes si loading_pendientes es true -->
+    {% if loading_pendientes %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔄 Auto-cargando pendientes después de verificar token...');
+            // Esperar un momento para que el DOM esté completamente listo
+            setTimeout(function() {
+                if (typeof actualizarPendientes === 'function') {
+                    actualizarPendientes();
+                } else {
+                    console.error('❌ Función actualizarPendientes no disponible');
+                }
+            }, 100);
+        });
+    </script>
+    {% endif %}
+
 </body>
 
 </html>

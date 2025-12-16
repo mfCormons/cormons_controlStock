@@ -487,6 +487,16 @@ function actualizarPendientes() {
             return;
         }
 
+        // Actualizar depósito si viene en la respuesta
+        if (data.deposito) {
+            const depositoEl = document.getElementById('deposito-info') ||
+                              document.getElementById('deposito-info-desktop');
+            if (depositoEl) {
+                depositoEl.textContent = data.deposito;
+                console.log('✅ Depósito actualizado:', data.deposito);
+            }
+        }
+
         renderizarPendientes(data.pendientes || []);
     })
     .catch(err => {

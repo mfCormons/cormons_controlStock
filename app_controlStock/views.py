@@ -306,36 +306,18 @@ def controlStock_view(request):
 
     print(f"✅ Usuario verificado: {usuario}")
 
-    # 3) Consultar pendientes
-    respuesta = comando_controlPendientes(token, request, usrActivo=usuario)
-    if not respuesta:
-        return renderizar_error(request, "Error al obtener stock pendientes", empresa_nombre)
+    # 3) Renderizar inmediatamente con spinner
+    # Los pendientes se cargarán con AJAX después
+    print("🚀 Renderizando template inmediatamente (pendientes se cargan con AJAX)")
 
-    # Verificar si VFP respondió con error
-    if respuesta.get("estado") is False:
-        mensaje = respuesta.get("mensaje", "Error al obtener stock pendientes")
-        # Limpiar sesión
-        request.session.flush()
-        # Mostrar error y redirigir después de 5 segundos
-        return renderizar_error(request, mensaje, empresa_nombre, redirect_to='https://login.cormons.app/', redirect_delay=5)
-
-    # 4) Normalizar productos
-    pendientes = (
-        respuesta.get("pendientes")
-        or respuesta.get("PRODUCTOS")
-        or respuesta.get("productos")
-        or respuesta.get("PENDIENTES")
-        or []
-    )
-
-    # 5) Render
     return render(request, "app_controlStock/controlStock.html", {
-        "pendientes": pendientes,
+        "pendientes": [],  # Vacío, se cargará con AJAX
         "empresa_nombre": empresa_nombre,
         "usuario": usuario,
         "nombre": nombre,
-        "deposito": respuesta.get("deposito", ""),
+        "deposito": "",  # Se cargará con AJAX
         "error": False,
+        "loading_pendientes": True,  # Flag para mostrar spinner y auto-cargar
     })
 
 
@@ -376,7 +358,12 @@ def controlPendientes_view(request):
         }, status=401)
 
     pendientes = respuesta_pendientes.get("pendientes", [])
-    return JsonResponse({"pendientes": pendientes}, status=200)
+    deposito = respuesta_pendientes.get("deposito", "")
+
+    return JsonResponse({
+        "pendientes": pendientes,
+        "deposito": deposito
+    }, status=200)
 
 
 @csrf_exempt
