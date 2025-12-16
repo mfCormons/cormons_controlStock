@@ -491,16 +491,22 @@ function actualizarPendientes() {
 
         // Actualizar depósito si viene en la respuesta
         console.log('📦 Buscando elementos de depósito...');
-        const depositoEl = document.getElementById('deposito-info') ||
-                          document.getElementById('deposito-info-desktop');
-        console.log('📦 Elemento encontrado:', depositoEl);
+        const depositoElMobile = document.getElementById('deposito-info');
+        const depositoElDesktop = document.getElementById('deposito-info-desktop');
+        console.log('📦 Elementos encontrados:', { mobile: depositoElMobile, desktop: depositoElDesktop });
 
         if (data.deposito) {
-            if (depositoEl) {
-                depositoEl.textContent = data.deposito;
-                console.log('✅ Depósito actualizado:', data.deposito);
-            } else {
-                console.warn('⚠️ No se encontró elemento deposito-info ni deposito-info-desktop');
+            // Actualizar AMBOS elementos (móvil y desktop) para que funcione en todas las pantallas
+            if (depositoElMobile) {
+                depositoElMobile.textContent = data.deposito;
+                console.log('✅ Depósito móvil actualizado:', data.deposito);
+            }
+            if (depositoElDesktop) {
+                depositoElDesktop.textContent = data.deposito;
+                console.log('✅ Depósito desktop actualizado:', data.deposito);
+            }
+            if (!depositoElMobile && !depositoElDesktop) {
+                console.warn('⚠️ No se encontró ningún elemento de depósito');
             }
         } else {
             console.warn('⚠️ data.deposito está vacío o undefined');
