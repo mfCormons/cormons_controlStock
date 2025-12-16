@@ -9,6 +9,7 @@
     let modalLogout = null;
     let modalConfirmarRegistro = null;
     let modalAlerta = null;
+    let errorAutenticacion = false; // Flag para evitar actualizar pendientes tras error 401
 
     // Helpers para cookies
     function getCookie(name) {
@@ -31,8 +32,18 @@
 
         // Actualizar pendientes al cerrar modal
         modalElement.addEventListener('hidden.bs.modal', function() {
-            console.log('🔄 Modal cerrado - Actualizando pendientes');
+            console.log('🔄 Modal cerrado');
             solicitudSeleccionada = null;
+
+            // Si hubo error de autenticación, NO actualizar pendientes
+            // (la sesión ya fue limpiada y se va a redirigir al login)
+            if (errorAutenticacion) {
+                console.log('⚠️ Error de autenticación detectado - NO actualizando pendientes');
+                errorAutenticacion = false; // Resetear flag
+                return;
+            }
+
+            console.log('✅ Actualizando pendientes');
             // Restaurar estado del botón Confirmar si quedó deshabilitado
             try {
                 const btn = modalElement.querySelector('.btn-success');
@@ -281,10 +292,13 @@
             // Si es 401, parsear el JSON para obtener el redirect y mensaje de VFP
             if (resp.status === 401) {
                 return resp.json().then(data => {
-                    console.log('🚫 Sesión inválida - mostrando modal de error con mensaje de VFP');
+                    console.log('🚫 Error 401 - Usuario deshabilitado o sesión inválida');
                     const redirectUrl = data.redirect || 'https://login.cormons.app/';
                     // SIEMPRE usar el mensaje de VFP (data.error)
                     const mensaje = data.error || data.mensaje || 'Error de autenticación';
+
+                    // Marcar que hubo error de autenticación para evitar actualizar pendientes
+                    errorAutenticacion = true;
 
                     // Cerrar modal de control si está abierto
                     if (modalControl) {
