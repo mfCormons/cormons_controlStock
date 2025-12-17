@@ -342,6 +342,23 @@
     </script>
     {% endif %}
 
+    <!-- Mostrar mensaje inicial de VFP si existe -->
+    {% if mensaje_inicial %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📢 VFP envió mensaje inicial:', "{{ mensaje_inicial|escapejs }}");
+            // Esperar a que las funciones estén disponibles
+            setTimeout(function() {
+                if (typeof mostrarAlerta === 'function') {
+                    mostrarAlerta("{{ mensaje_inicial|escapejs }}", 'info');
+                } else {
+                    console.error('❌ Función mostrarAlerta no disponible');
+                }
+            }, 200);
+        });
+    </script>
+    {% endif %}
+
     <!-- Auto-cargar pendientes si loading_pendientes es true -->
     {% if loading_pendientes %}
     <script>

@@ -300,10 +300,13 @@ def controlStock_view(request):
 
     usuario = verificarToken["usuario"]
     nombre = verificarToken["nombre"]
+    mensaje_vfp = verificarToken.get("mensaje", "")  # Capturar mensaje de VFP si existe
 
     # NOTA: No guardamos en sesión - ya están en cookies (user_usuario, user_nombre)
     # Las cookies son la única fuente de verdad para la autenticación
     print(f"✅ Usuario verificado: {usuario}")
+    if mensaje_vfp:
+        print(f"📢 VFP envió mensaje: {mensaje_vfp}")
 
     # 3) Renderizar inmediatamente con spinner
     # Los pendientes se cargarán con AJAX después
@@ -317,6 +320,7 @@ def controlStock_view(request):
         "deposito": "",  # Se cargará con AJAX
         "error": False,
         "loading_pendientes": True,  # Flag para mostrar spinner y auto-cargar
+        "mensaje_inicial": mensaje_vfp,  # Mensaje de VFP al verificar token
     })
 
 
