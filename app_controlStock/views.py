@@ -358,13 +358,17 @@ def controlPendientes_view(request):
 
     pendientes = respuesta_pendientes.get("pendientes", [])
     deposito = respuesta_pendientes.get("deposito", "")
+    mensaje = respuesta_pendientes.get("mensaje", "")
 
     print(f"📦 DEBUG: deposito extraído = {repr(deposito)}")
     print(f"📦 DEBUG: respuesta_pendientes keys = {list(respuesta_pendientes.keys())}")
+    if mensaje:
+        print(f"📢 DEBUG: VFP envió mensaje con estado true: {mensaje}")
 
     return JsonResponse({
         "pendientes": pendientes,
-        "deposito": deposito
+        "deposito": deposito,
+        "mensaje": mensaje
     }, status=200)
 
 

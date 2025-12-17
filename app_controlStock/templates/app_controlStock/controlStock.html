@@ -350,7 +350,7 @@
             // Esperar a que las funciones estén disponibles
             setTimeout(function() {
                 if (typeof mostrarAlerta === 'function') {
-                    mostrarAlerta("{{ mensaje_inicial|escapejs }}", 'info');
+                    mostrarAlerta("{{ mensaje_inicial|escapejs }}", 'info-modal');
                 } else {
                     console.error('❌ Función mostrarAlerta no disponible');
                 }

@@ -87,10 +87,11 @@
     }
 
     // Función helper para mostrar alertas
-    // - Para 'success' e 'info' muestra notificaciones no bloqueantes (toasts)
+    // - Para 'success' muestra notificaciones no bloqueantes (toasts)
+    // - Para 'info-modal' muestra modal bloqueante informativo (mensajes de VFP)
     // - Para 'error' y 'warning' mantiene el modal bloqueante existente
     function mostrarAlerta(mensaje, tipo = 'info') {
-        const useToast = (tipo === 'success' || tipo === 'info');
+        const useToast = (tipo === 'success');
 
         if (useToast) {
             // Crear contenedor de toasts si no existe
@@ -145,10 +146,11 @@
 
         const configs = {
             'error': { headerClass: 'bg-danger text-white', titulo: 'Error', icono: 'fa-times-circle text-danger' },
-            'warning': { headerClass: 'bg-warning text-dark', titulo: 'Advertencia', icono: 'fa-exclamation-triangle text-warning' }
+            'warning': { headerClass: 'bg-warning text-dark', titulo: 'Advertencia', icono: 'fa-exclamation-triangle text-warning' },
+            'info-modal': { headerClass: 'bg-info text-white', titulo: 'Información', icono: 'fa-info-circle text-info' }
         };
 
-        const config = configs[tipo] || configs.error;
+        const config = configs[tipo] || configs['info-modal'];
         if (header) header.className = `modal-header ${config.headerClass}`;
         if (titulo) titulo.innerHTML = `<i class="fas ${config.icono.split(' ')[0]} me-2"></i>${config.titulo}`;
         if (icono) { icono.className = `fas ${config.icono}`; icono.style.fontSize = '3rem'; }
@@ -506,9 +508,9 @@ function actualizarPendientes() {
         }
 
         // Si VFP devolvió un mensaje (estado true con mensaje informativo), mostrarlo
-        // Solo si hay pendientes, porque si no hay se muestra en renderizarPendientes
-        if (data.mensaje && (data.pendientes && data.pendientes.length > 0)) {
-            mostrarAlerta(data.mensaje, 'info');
+        // Siempre mostrar como modal bloqueante
+        if (data.mensaje) {
+            mostrarAlerta(data.mensaje, 'info-modal');
         }
 
         // Actualizar depósito si viene en la respuesta
