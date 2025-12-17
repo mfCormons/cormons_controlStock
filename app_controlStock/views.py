@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 import logging
 from django.http import JsonResponse
 #from compartidos.cookies_utils import sincronizar_conexion_a_sesion
-from .utils import obtener_datos_cookies, renderizar_error, renderizar_exito
+from .utils import obtener_datos_cookies, renderizar_error, renderizar_exito, borrar_cookies_sesion
 from .services import comando_verificarToken, comando_controlPendientes, comando_stockControlado
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -428,13 +428,12 @@ def stockControlado_view(request):
 def logout_view(request):
     logger.debug("==== LOGOUT VIEW CONTROL STOCK ====")
 
-    # NOTA: Ya no usamos sesión de Django, solo cookies
-    # Las cookies de usuario son manejadas por el sistema de login central
-    # Solo redirigimos al login que se encargará de limpiar las cookies
-    response.delete_cookie('user_nombre', domain='.cormons.app', path='/')
-    # Redirigir al login
+    # Crear respuesta de redirección primero
     response = redirect('https://login.cormons.app/login/?logout=1')
 
-    logger.debug("Redirigiendo a login")
+    # Borrar cookies de sesión usando helper
+    response = borrar_cookies_sesion(response)
+
+    logger.debug("Redirigiendo a login con cookies borradas")
 
     return response
