@@ -336,7 +336,8 @@
                 }
                 // SIEMPRE usar mensaje de VFP si existe (incluso si es vacío)
                 const mensaje = data.mensaje !== undefined && data.mensaje !== null ? data.mensaje : 'Operación exitosa';
-                mostrarAlerta(mensaje, 'success');
+                // Mostrar mensaje en modal info (igual que las otras interacciones con VFP)
+                mostrarAlerta(mensaje, 'info-modal');
                 // Restaurar botón confirmar si quedó con spinner
                 if (btnConfirmar) {
                     try {
