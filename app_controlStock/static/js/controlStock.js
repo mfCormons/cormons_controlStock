@@ -526,7 +526,7 @@ function actualizarPendientes() {
             console.warn('⚠️ data.deposito está vacío o undefined');
         }
 
-        renderizarPendientes(data.pendientes || []);
+        renderizarPendientes(data.pendientes || [], data.mensaje);
     })
     .catch(err => {
         console.error('❌ Error al actualizar pendientes:', err);
@@ -543,14 +543,16 @@ function actualizarPendientes() {
     });
 }
 
-function renderizarPendientes(pendientes) {
+function renderizarPendientes(pendientes, mensajeVFP) {
     const container = document.getElementById('solicitudes-container');
     if (!container) return;
-    
+
     if (!pendientes || pendientes.length === 0) {
+        // Si VFP envió un mensaje, usarlo; sino usar mensaje por defecto
+        const mensaje = mensajeVFP || 'No hay solicitudes pendientes';
         container.innerHTML = `
             <div class="card-body p-4 text-center">
-                <div class="alert alert-info mb-0">No hay solicitudes pendientes</div>
+                <div class="alert alert-info mb-0">${mensaje}</div>
             </div>
         `;
         return;
