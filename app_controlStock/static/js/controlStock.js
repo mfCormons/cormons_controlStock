@@ -320,8 +320,9 @@
                 if (modalControl) {
                     modalControl.hide();
                 }
-                // SIEMPRE usar mensaje de VFP para éxito
-                mostrarAlerta(data.mensaje || 'Operación exitosa', 'success');
+                // SIEMPRE usar mensaje de VFP si existe (incluso si es vacío)
+                const mensaje = data.mensaje !== undefined && data.mensaje !== null ? data.mensaje : 'Operación exitosa';
+                mostrarAlerta(mensaje, 'success');
                 // Restaurar botón confirmar si quedó con spinner
                 if (btnConfirmar) {
                     try {
@@ -332,8 +333,9 @@
                 }
                 solicitudSeleccionada = null;
             } else {
-                // SIEMPRE usar mensaje de VFP para error
-                mostrarAlerta(data.mensaje || 'Error en la operación', 'error');
+                // SIEMPRE usar mensaje de VFP si existe (incluso si es vacío)
+                const mensaje = data.mensaje !== undefined && data.mensaje !== null ? data.mensaje : 'Error en la operación';
+                mostrarAlerta(mensaje, 'error');
                 if (btnConfirmar) {
                     btnConfirmar.disabled = false;
                     btnConfirmar.innerHTML = textoOriginal;
@@ -503,6 +505,12 @@ function actualizarPendientes() {
             return;
         }
 
+        // Si VFP devolvió un mensaje (estado true con mensaje informativo), mostrarlo
+        // Solo si hay pendientes, porque si no hay se muestra en renderizarPendientes
+        if (data.mensaje && (data.pendientes && data.pendientes.length > 0)) {
+            mostrarAlerta(data.mensaje, 'info');
+        }
+
         // Actualizar depósito si viene en la respuesta
         console.log('📦 Buscando elementos de depósito...');
         const depositoElMobile = document.getElementById('deposito-info');
@@ -548,8 +556,8 @@ function renderizarPendientes(pendientes, mensajeVFP) {
     if (!container) return;
 
     if (!pendientes || pendientes.length === 0) {
-        // Si VFP envió un mensaje, usarlo; sino usar mensaje por defecto
-        const mensaje = mensajeVFP || 'No hay solicitudes pendientes';
+        // Si VFP envió un mensaje (incluso vacío), usarlo; sino usar mensaje por defecto
+        const mensaje = mensajeVFP !== undefined && mensajeVFP !== null ? mensajeVFP : 'No hay solicitudes pendientes';
         container.innerHTML = `
             <div class="card-body p-4 text-center">
                 <div class="alert alert-info mb-0">${mensaje}</div>
