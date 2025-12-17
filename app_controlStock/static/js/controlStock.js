@@ -507,12 +507,6 @@ function actualizarPendientes() {
             return;
         }
 
-        // Si VFP devolvió un mensaje (estado true con mensaje informativo), mostrarlo
-        // Siempre mostrar como modal bloqueante
-        if (data.mensaje) {
-            mostrarAlerta(data.mensaje, 'info-modal');
-        }
-
         // Actualizar depósito si viene en la respuesta
         console.log('📦 Buscando elementos de depósito...');
         const depositoElMobile = document.getElementById('deposito-info');
@@ -557,14 +551,28 @@ function renderizarPendientes(pendientes, mensajeVFP) {
     const container = document.getElementById('solicitudes-container');
     if (!container) return;
 
+    // Si VFP envió un mensaje, mostrarlo como modal bloqueante
+    if (mensajeVFP) {
+        mostrarAlerta(mensajeVFP, 'info-modal');
+    }
+
     if (!pendientes || pendientes.length === 0) {
-        // Si VFP envió un mensaje (incluso vacío), usarlo; sino usar mensaje por defecto
-        const mensaje = mensajeVFP !== undefined && mensajeVFP !== null ? mensajeVFP : 'No hay solicitudes pendientes';
-        container.innerHTML = `
-            <div class="card-body p-4 text-center">
-                <div class="alert alert-info mb-0">${mensaje}</div>
-            </div>
-        `;
+        // Mostrar mensaje simple en el área (sin el mensaje de VFP, ya se mostró en modal)
+        const mensajeArea = mensajeVFP ? '' : 'No hay solicitudes pendientes';
+        if (mensajeArea) {
+            container.innerHTML = `
+                <div class="card-body p-4 text-center">
+                    <div class="alert alert-info mb-0">${mensajeArea}</div>
+                </div>
+            `;
+        } else {
+            // Si hay mensaje de VFP, dejar el área vacía o con un placeholder
+            container.innerHTML = `
+                <div class="card-body p-4 text-center">
+                    <div class="alert alert-info mb-0">No hay solicitudes pendientes</div>
+                </div>
+            `;
+        }
         return;
     }
     
