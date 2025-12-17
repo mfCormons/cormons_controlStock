@@ -157,7 +157,19 @@
         if (mensajeEl) mensajeEl.textContent = mensaje;
         if (btnClose) btnClose.className = config.headerClass.includes('text-white') ? 'btn-close btn-close-white' : 'btn-close';
 
-        if (modalAlerta) modalAlerta.show(); else alert(mensaje);
+        console.log('🔔 mostrarAlerta - tipo:', tipo, 'modalAlerta:', modalAlerta);
+        if (modalAlerta) {
+            try {
+                modalAlerta.show();
+                console.log('✅ Modal mostrado correctamente');
+            } catch (err) {
+                console.error('❌ Error al mostrar modal:', err);
+                alert(mensaje);
+            }
+        } else {
+            console.warn('⚠️ modalAlerta no está inicializado');
+            alert(mensaje);
+        }
     }
 
     function abrirModalControl(solicitud) {
@@ -443,6 +455,7 @@
     window.ejecutarRegistro = ejecutarRegistro;
     window.mostrarError = mostrarError;
     window.mostrarErrorConRedirect = mostrarErrorConRedirect;
+    window.mostrarAlerta = mostrarAlerta;
 
     console.log('✅ controlStock.js inicializado (adaptado)');
 })();
