@@ -301,9 +301,8 @@ def controlStock_view(request):
     usuario = verificarToken["usuario"]
     nombre = verificarToken["nombre"]
 
-    request.session['usuario'] = usuario
-    request.session['nombre'] = nombre
-
+    # NOTA: No guardamos en sesión - ya están en cookies (user_usuario, user_nombre)
+    # Las cookies son la única fuente de verdad para la autenticación
     print(f"✅ Usuario verificado: {usuario}")
 
     # 3) Renderizar inmediatamente con spinner
@@ -335,11 +334,8 @@ def controlPendientes_view(request):
             "redirect": "https://login.cormons.app/"
         }, status=401)
 
-    # Para las acciones UI (botón actualizar, cerrar modal) NO debemos
-    # ejecutar verificarToken de nuevo. Usamos el usuario guardado en session
-    usuario = request.session.get('usuario')
-    if not usuario:
-        return JsonResponse({"error": "Sesión inválida - reingrese"}, status=401)
+    # Usar el usuario de la cookie directamente (ya no usamos sesiones)
+    usuario = usuario_cookie
 
     respuesta_pendientes = comando_controlPendientes(token, request, usrActivo=usuario)
     if not respuesta_pendientes:
@@ -347,10 +343,9 @@ def controlPendientes_view(request):
 
     # Verificar si VFP respondió con error (token inválido, versión incorrecta, etc.)
     if respuesta_pendientes.get("estado") is False:
-        # Limpiar sesión
-        request.session.flush()
         # Retornar 401 incluyendo el mensaje devuelto por VFP para que el frontend
         # pueda mostrar el detalle exacto antes de redirigir.
+        # NOTA: Ya no limpiamos sesión porque no la usamos - las cookies son manejadas por el frontend
         mensaje_vfp = respuesta_pendientes.get('mensaje', 'Sesión inválida')
         return JsonResponse({
             "error": mensaje_vfp,
@@ -394,9 +389,13 @@ def stockControlado_view(request):
     if not token or not idSolicitud or cantidad is None:
         return JsonResponse({"estado": False, "mensaje": "Faltan datos obligatorios"}, status=400)
 
-    usuario = request.session.get('usuario')
+    # Obtener usuario desde cookie directamente (ya no usamos sesión)
+    usuario = request.COOKIES.get('user_usuario')
     if not usuario:
-        return JsonResponse({"estado": False, "mensaje": "Sesión expirada. Reingrese."}, status=401)
+        return JsonResponse({
+            "error": "No hay usuario activo",
+            "redirect": "https://login.cormons.app/"
+        }, status=401)
 
     respuesta = comando_stockControlado(token, request, usuario, idSolicitud, cantidad)
 
@@ -405,9 +404,8 @@ def stockControlado_view(request):
 
     # Verificar si VFP respondió con error (token inválido, versión incorrecta, etc.)
     if estado is False:
-        # Limpiar sesión
-        request.session.flush()
         # Retornar 401 para que el frontend redirija al login
+        # NOTA: Ya no limpiamos sesión porque no la usamos - las cookies son manejadas por el frontend
         return JsonResponse({
             "error": mensaje or "Error al registrar control",
             "redirect": "https://login.cormons.app/"
@@ -421,21 +419,18 @@ def stockControlado_view(request):
 
 def logout_view(request):
     """
-    Cierra sesión del usuario actual: limpia sesión y cookies de usuario,
-    y redirige al login
+    Cierra sesión del usuario actual: redirige al login.
+    Las cookies son manejadas por el sistema de login central.
     """
     logger.debug("==== LOGOUT VIEW CONTROL STOCK ====")
 
-    # Limpiar sesión de Django (usuario, nombre, empresa_ip, empresa_puerto, etc.)
-    request.session.flush()
+    # NOTA: Ya no usamos sesión de Django, solo cookies
+    # Las cookies de usuario son manejadas por el sistema de login central
+    # Solo redirigimos al login que se encargará de limpiar las cookies
 
     # Redirigir al login
     response = redirect('https://login.cormons.app/')
 
-    # Borrar SOLO cookies de usuario (mantiene authToken y connection_config)
-    response.delete_cookie('user_nombre', domain='.cormons.app')
-    response.delete_cookie('user_usuario', domain='.cormons.app')
-
-    logger.debug("Cookies de usuario borradas, redirigiendo a login")
+    logger.debug("Redirigiendo a login")
 
     return response
