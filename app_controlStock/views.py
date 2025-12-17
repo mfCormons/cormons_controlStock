@@ -426,18 +426,14 @@ def stockControlado_view(request):
     return JsonResponse({"estado": estado, "mensaje": mensaje})
 
 def logout_view(request):
-    """
-    Cierra sesión del usuario actual: redirige al login.
-    Las cookies son manejadas por el sistema de login central.
-    """
     logger.debug("==== LOGOUT VIEW CONTROL STOCK ====")
 
     # NOTA: Ya no usamos sesión de Django, solo cookies
     # Las cookies de usuario son manejadas por el sistema de login central
     # Solo redirigimos al login que se encargará de limpiar las cookies
-
+    response.delete_cookie('user_nombre', domain='.cormons.app', path='/')
     # Redirigir al login
-    response = redirect('https://login.cormons.app/')
+    response = redirect('https://login.cormons.app/login/?logout=1')
 
     logger.debug("Redirigiendo a login")
 

@@ -144,3 +144,13 @@ def renderizar_exito(request, usuario, nombre, empresa_nombre, apps):
     }
     return render(request, 'app_controlStock/controlStock.html', context)
 
+def borrar_cookies_sesion(response):
+    """
+    Borra cookies de sesión al logout (NO borra token ni empresa)
+    """
+    response.delete_cookie('user_nombre', domain='.cormons.app', path='/')
+    response.delete_cookie('user_usuario', domain='.cormons.app', path='/')
+    response.delete_cookie('sessionid', domain='.cormons.app', path='/')
+    
+    logger.debug("Cookies de sesión borradas")
+    return response
