@@ -79,10 +79,8 @@ def enviar_consulta_tcp(mensaje_dict, request=None, ip_custom=None, puerto_custo
                     print(f"📦 Chunk recibido: {len(chunk)} bytes. Total: {len(respuesta_completa) + len(chunk)} bytes")
                     respuesta_completa += chunk
 
-                    # Si el chunk es menor que el buffer, es el último
-                    if len(chunk) < 4096:
-                        print(f"✅ Último chunk detectado (parcial: {len(chunk)} < 4096)")
-                        break
+                    # NO asumir que es el último solo porque es < 4096
+                    # Seguir intentando leer hasta timeout o chunk vacío
                 except socket.timeout:
                     # Timeout esperando más datos - asumimos que ya terminó la transmisión
                     print(f"⏱️ Timeout. Bytes acumulados: {len(respuesta_completa)}")
