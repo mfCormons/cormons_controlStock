@@ -69,18 +69,23 @@ def enviar_consulta_tcp(mensaje_dict, request=None, ip_custom=None, puerto_custo
                 try:
                     # Después del primer chunk, usar timeout más corto para detectar fin de transmisión
                     if respuesta_completa:
-                        s.settimeout(0.5)  # 500ms para chunks subsiguientes
+                        s.settimeout(1.5)  # 1.5 segundos para chunks subsiguientes (más generoso)
 
                     chunk = s.recv(4096)
                     if not chunk:
+                        logger.debug(f"📭 Recibido chunk vacío. Total acumulado: {len(respuesta_completa)} bytes")
                         break
+
+                    logger.debug(f"📦 Chunk recibido: {len(chunk)} bytes. Total: {len(respuesta_completa) + len(chunk)} bytes")
                     respuesta_completa += chunk
 
                     # Si el chunk es menor que el buffer, es el último
                     if len(chunk) < 4096:
+                        logger.debug(f"✅ Último chunk detectado (parcial: {len(chunk)} < 4096)")
                         break
                 except socket.timeout:
                     # Timeout esperando más datos - asumimos que ya terminó la transmisión
+                    logger.debug(f"⏱️ Timeout. Bytes acumulados: {len(respuesta_completa)}")
                     if respuesta_completa:
                         break
                     else:
@@ -94,14 +99,20 @@ def enviar_consulta_tcp(mensaje_dict, request=None, ip_custom=None, puerto_custo
                 return {'estado': False, 'mensaje': 'Respuesta demasiado grande'}
 
             # CRÍTICO: Convertir bytes a string con latin-1, desencriptar, luego decodificar JSON
+            logger.debug(f"📏 Total de bytes recibidos antes de desencriptar: {len(respuesta_completa)}")
+
             respuesta_str_encriptada = respuesta_completa.decode('latin-1')
             respuesta_desencriptada = desencriptar(respuesta_str_encriptada)
+
+            logger.debug(f"🔓 Respuesta desencriptada (primeros 200 chars): {respuesta_desencriptada[:200]}")
+            logger.debug(f"🔓 Respuesta desencriptada (últimos 50 chars): {respuesta_desencriptada[-50:]}")
 
             try:
                 return json.loads(respuesta_desencriptada)
             except json.JSONDecodeError as e:
-                logger.error(f"Error parseando JSON: {e}")
-                logger.error(f"Respuesta recibida: {repr(respuesta_desencriptada[:200])}")
+                logger.error(f"❌ Error parseando JSON: {e}")
+                logger.error(f"📄 Respuesta desencriptada (primeros 500 chars): {repr(respuesta_desencriptada[:500])}")
+                logger.error(f"📄 Respuesta desencriptada (últimos 100 chars): {repr(respuesta_desencriptada[-100:])}")
                 return {"estado": False, "mensaje": "Respuesta inválida"}
     except Exception as e:
         print("ERROR TCP:", repr(e))
