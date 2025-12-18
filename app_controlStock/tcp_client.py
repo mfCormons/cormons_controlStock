@@ -61,12 +61,40 @@ def enviar_consulta_tcp(mensaje_dict, request=None, ip_custom=None, puerto_custo
             s.connect((host, port))
             s.sendall(contenido.encode('latin-1', errors='replace'))
 
-            respuesta = s.recv(2048)
-            if not respuesta:
+            # Leer la respuesta completa en chunks hasta que no haya más datos
+            respuesta_completa = b''
+            MAX_SIZE = 1024 * 1024  # Límite de 1MB para evitar respuestas infinitas
+
+            while len(respuesta_completa) < MAX_SIZE:
+                try:
+                    # Después del primer chunk, usar timeout más corto para detectar fin de transmisión
+                    if respuesta_completa:
+                        s.settimeout(0.5)  # 500ms para chunks subsiguientes
+
+                    chunk = s.recv(4096)
+                    if not chunk:
+                        break
+                    respuesta_completa += chunk
+
+                    # Si el chunk es menor que el buffer, es el último
+                    if len(chunk) < 4096:
+                        break
+                except socket.timeout:
+                    # Timeout esperando más datos - asumimos que ya terminó la transmisión
+                    if respuesta_completa:
+                        break
+                    else:
+                        return {'estado': False, 'mensaje': 'Timeout esperando respuesta'}
+
+            if not respuesta_completa:
                 return {'estado': False, 'mensaje': 'No se recibió respuesta'}
 
+            if len(respuesta_completa) >= MAX_SIZE:
+                logger.warning(f"Respuesta muy grande: {len(respuesta_completa)} bytes")
+                return {'estado': False, 'mensaje': 'Respuesta demasiado grande'}
+
             # CRÍTICO: Convertir bytes a string con latin-1, desencriptar, luego decodificar JSON
-            respuesta_str_encriptada = respuesta.decode('latin-1')
+            respuesta_str_encriptada = respuesta_completa.decode('latin-1')
             respuesta_desencriptada = desencriptar(respuesta_str_encriptada)
 
             try:
