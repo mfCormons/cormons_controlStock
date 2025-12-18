@@ -307,7 +307,7 @@
             if (resp.status === 401) {
                 return resp.json().then(data => {
                     console.log('🚫 Error 401 - Usuario deshabilitado o sesión inválida');
-                    const redirectUrl = data.redirect || 'https://login.cormons.app/';
+                    const redirectUrl = data.redirect || 'https://login.cormons.app/login/?logout=1';
                     // SIEMPRE usar el mensaje de VFP (data.error)
                     const mensaje = data.error || data.mensaje || 'Error de autenticación';
 
@@ -495,7 +495,7 @@ function actualizarPendientes() {
         if (resp.status === 401) {
             return resp.json().then(data => {
                 console.log('🚫 Sesión inválida - mostrando modal de error con mensaje de VFP');
-                const redirectUrl = data.redirect || 'https://login.cormons.app/';
+                const redirectUrl = data.redirect || 'https://login.cormons.app/login/?logout=1';
                 // SIEMPRE usar el mensaje de VFP (data.error)
                 const mensaje = data.error || data.mensaje || 'Error de autenticación';
 

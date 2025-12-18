@@ -335,7 +335,7 @@ def controlPendientes_view(request):
     if not token or not usuario_cookie:
         return JsonResponse({
             "error": "No hay usuario activo",
-            "redirect": "https://login.cormons.app/"
+            "redirect": "https://login.cormons.app/login/?logout=1"
         }, status=401)
 
     # Usar el usuario de la cookie directamente (ya no usamos sesiones)
@@ -353,7 +353,7 @@ def controlPendientes_view(request):
         mensaje_vfp = respuesta_pendientes.get('mensaje', 'Sesión inválida')
         return JsonResponse({
             "error": mensaje_vfp,
-            "redirect": "https://login.cormons.app/"
+            "redirect": "https://login.cormons.app/login/?logout=1"
         }, status=401)
 
     pendientes = respuesta_pendientes.get("pendientes", [])
@@ -402,7 +402,7 @@ def stockControlado_view(request):
     if not usuario:
         return JsonResponse({
             "error": "No hay usuario activo",
-            "redirect": "https://login.cormons.app/"
+            "redirect": "https://login.cormons.app/login/?logout=1"
         }, status=401)
 
     respuesta = comando_stockControlado(token, request, usuario, idSolicitud, cantidad)
@@ -416,7 +416,7 @@ def stockControlado_view(request):
         # NOTA: Ya no limpiamos sesión porque no la usamos - las cookies son manejadas por el frontend
         return JsonResponse({
             "error": mensaje or "Error al registrar control",
-            "redirect": "https://login.cormons.app/"
+            "redirect": "https://login.cormons.app/login/?logout=1"
         }, status=401)
 
     # Si es exitoso pero no hay mensaje, usar mensaje por defecto
