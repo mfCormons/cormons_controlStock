@@ -419,10 +419,7 @@ def stockControlado_view(request):
             "redirect": "https://login.cormons.app/login/?logout=1"
         }, status=401)
 
-    # Si es exitoso pero no hay mensaje, usar mensaje por defecto
-    if estado and not mensaje:
-        mensaje = 'Stock controlado correctamente'
-
+    # Devolver el mensaje tal como viene de VFP (puede ser vacío)
     return JsonResponse({"estado": estado, "mensaje": mensaje})
 
 def logout_view(request):
