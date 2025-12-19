@@ -331,12 +331,13 @@
         document.addEventListener('DOMContentLoaded', function() {
             const mensaje = "{{ mensaje|escapejs }}";
             const redirectUrl = "{{ redirect_to|escapejs }}";
-            const delay = parseInt("{{ redirect_delay|default:'5' }}", 10);
 
             if (typeof window.mostrarErrorConRedirect === 'function') {
-                window.mostrarErrorConRedirect(mensaje, redirectUrl, delay);
+                window.mostrarErrorConRedirect(mensaje, redirectUrl);
             } else {
-                setTimeout(function() { window.location.href = redirectUrl; }, delay * 1000);
+                // Fallback: mostrar alerta y redirigir solo cuando usuario presione OK
+                alert(mensaje);
+                window.location.href = redirectUrl;
             }
         });
     </script>

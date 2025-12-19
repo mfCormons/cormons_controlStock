@@ -268,8 +268,7 @@ def controlStock_view(request):
             request,
             "No se encontraron credenciales de autenticación",
             empresa_nombre,
-            redirect_to='https://login.cormons.app/',
-            redirect_delay=5
+            redirect_to='https://login.cormons.app/'
         )
 
     if not usuario_cookie:
@@ -278,8 +277,7 @@ def controlStock_view(request):
             request,
             "No hay usuario activo. Por favor, inicie sesión nuevamente.",
             empresa_nombre,
-            redirect_to='https://login.cormons.app/',
-            redirect_delay=5
+            redirect_to='https://login.cormons.app/'
         )
 
     empresa_nombre = datos_conexion.get('nombre', 'EmpresaDefault')
@@ -295,8 +293,8 @@ def controlStock_view(request):
         mensaje = verificarToken.get("mensaje", "Token inválido")
         # Limpiar sesión
         request.session.flush()
-        # Mostrar error y redirigir después de 5 segundos
-        return renderizar_error(request, mensaje, empresa_nombre, redirect_to='https://login.cormons.app/', redirect_delay=5)
+        # Mostrar error - usuario debe presionar Aceptar para redirigir
+        return renderizar_error(request, mensaje, empresa_nombre, redirect_to='https://login.cormons.app/')
 
     usuario = verificarToken["usuario"]
     nombre = verificarToken["nombre"]
