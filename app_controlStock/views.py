@@ -268,7 +268,7 @@ def controlStock_view(request):
             request,
             "No se encontraron credenciales de autenticación",
             empresa_nombre,
-            redirect_to='https://login.cormons.app/'
+            redirect_to='https://cormons.app/'
         )
 
     if not usuario_cookie:
@@ -277,7 +277,7 @@ def controlStock_view(request):
             request,
             "No hay usuario activo. Por favor, inicie sesión nuevamente.",
             empresa_nombre,
-            redirect_to='https://login.cormons.app/'
+            redirect_to='https://cormons.app/'
         )
 
     empresa_nombre = datos_conexion.get('nombre', 'EmpresaDefault')
@@ -294,7 +294,7 @@ def controlStock_view(request):
         # Limpiar sesión
         request.session.flush()
         # Mostrar error - usuario debe presionar Aceptar para redirigir
-        return renderizar_error(request, mensaje, empresa_nombre, redirect_to='https://login.cormons.app/')
+        return renderizar_error(request, mensaje, empresa_nombre, redirect_to='https://cormons.app/')
 
     usuario = verificarToken["usuario"]
     nombre = verificarToken["nombre"]
@@ -333,7 +333,7 @@ def controlPendientes_view(request):
     if not token or not usuario_cookie:
         return JsonResponse({
             "error": "No hay usuario activo",
-            "redirect": "https://login.cormons.app/login/?logout=1"
+            "redirect": "https://cormons.app/login/?logout=1"
         }, status=401)
 
     # Usar el usuario de la cookie directamente (ya no usamos sesiones)
@@ -351,7 +351,7 @@ def controlPendientes_view(request):
         mensaje_vfp = respuesta_pendientes.get('mensaje', 'Sesión inválida')
         return JsonResponse({
             "error": mensaje_vfp,
-            "redirect": "https://login.cormons.app/login/?logout=1"
+            "redirect": "https://cormons.app/login/?logout=1"
         }, status=401)
 
     pendientes = respuesta_pendientes.get("pendientes", [])
@@ -400,7 +400,7 @@ def stockControlado_view(request):
     if not usuario:
         return JsonResponse({
             "error": "No hay usuario activo",
-            "redirect": "https://login.cormons.app/login/?logout=1"
+            "redirect": "https://cormons.app/login/?logout=1"
         }, status=401)
 
     respuesta = comando_stockControlado(token, request, usuario, idSolicitud, cantidad)
@@ -414,7 +414,7 @@ def stockControlado_view(request):
         # NOTA: Ya no limpiamos sesión porque no la usamos - las cookies son manejadas por el frontend
         return JsonResponse({
             "error": mensaje or "Error al registrar control",
-            "redirect": "https://login.cormons.app/login/?logout=1"
+            "redirect": "https://cormons.app/login/?logout=1"
         }, status=401)
 
     # Devolver el mensaje tal como viene de VFP (puede ser vacío)
@@ -424,7 +424,7 @@ def logout_view(request):
     logger.debug("==== LOGOUT VIEW CONTROL STOCK ====")
 
     # Crear respuesta de redirección primero
-    response = redirect('https://login.cormons.app/login/?logout=1')
+    response = redirect('https://cormons.app/login/?logout=1')
 
     # Borrar cookies de sesión usando helper
     response = borrar_cookies_sesion(response)
